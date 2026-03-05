@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSS · Infrastrutture Strategiche Italia v8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#07090f;--bg2:#0d1018;--bg3:#131720;--bg4:#0a0c14;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);--accent:#e8c547;--accent2:#f0743a;--accent3:#4a9eff;--danger:#ff4757;--warning:#ffa502;--ok:#2ed573;--purple:#a78bfa;--text:#e8eaf0;--text2:#8a909e;--text3:#555d6e;--panel:rgba(7,9,15,0.97)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px}
+#hdr{position:fixed;top:0;left:0;right:0;z-index:1000;height:50px;background:rgba(7,9,15,0.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;backdrop-filter:blur(16px)}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-sq{width:32px;height:32px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:11px;color:#07090f}
+.logo-tx{font-family:'Syne',sans-serif;font-weight:700;font-size:12.5px}
+.logo-sx{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--text3);letter-spacing:1px}
+.hdr-mid{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--ok);animation:pd 2s infinite;flex-shrink:0}
+@keyframes pd{0%,100%{box-shadow:0 0 0 0 rgba(46,213,115,.5)}50%{box-shadow:0 0 0 5px transparent}}
+.hdr-r{display:flex;align-items:center;gap:6px}
+#clk{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2)}
+.hbtn{background:transparent;border:1px solid var(--border2);color:var(--text3);padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.hbtn:hover{border-color:var(--accent);color:var(--accent)}
+.hbtn.prim{background:var(--accent);color:#07090f;border-color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:10px}
+.hbtn.prim:hover{background:#f5d45e}
+#app{position:fixed;top:50px;left:0;right:0;bottom:0;display:grid;grid-template-columns:248px 1fr 288px}
+#lp{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+.ptit{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.kpi{background:var(--bg3);border:1px solid var(--border);padding:9px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.d::before{background:var(--danger)}.kpi.w::before{background:var(--warning)}.kpi.o::before{background:var(--ok)}.kpi.p::before{background:var(--purple)}
+.kv{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;line-height:1}
+.kv.d{color:var(--danger)}.kv.w{color:var(--warning)}.kv.o{color:var(--ok)}.kv.p{color:var(--purple)}
+.kl{font-size:8.5px;color:var(--text3);margin-top:3px;font-family:'JetBrains Mono',monospace;line-height:1.3}
+.kd{font-size:7.5px;color:var(--text3);margin-top:4px}.kd span{color:var(--warning)}
+.sbar{margin-bottom:7px}.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.sn{font-size:10px;color:var(--text2)}.ss{font-family:'JetBrains Mono',monospace;font-size:10px}
+.bt{height:3px;background:rgba(255,255,255,.05)}.bf{height:100%;transition:width 1.2s ease}
+.ti{background:var(--bg3);border:1px solid var(--border);padding:7px 9px;margin-bottom:4px;position:relative;padding-left:12px}
+.ti-sev{font-family:'JetBrains Mono',monospace;font-size:7.5px;letter-spacing:1px;margin-bottom:2px}
+.ti-tx{font-size:9.5px;color:var(--text);line-height:1.3}
+.ti::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.sH{color:var(--danger)}.sM{color:var(--warning)}.sL{color:var(--ok)}
+.tH::before{background:var(--danger)}.tM::before{background:var(--warning)}.tL::before{background:var(--ok)}
+#ctr{display:flex;flex-direction:column}
+.view-tabs{display:flex;background:var(--bg4);border-bottom:1px solid var(--border2);flex-shrink:0;overflow-x:auto}
+.vtab{flex:none;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.8px;cursor:pointer;text-transform:uppercase;transition:all .2s;margin-bottom:-1px;white-space:nowrap}
+.vtab.a{color:var(--accent);border-bottom-color:var(--accent)}
+.view-pane{flex:1;display:none;position:relative;overflow:hidden}
+.view-pane.a{display:flex;flex-direction:column}
+#map{width:100%;height:100%;background:#0d1018}
+#infra-ctrl{position:absolute;top:8px;left:8px;z-index:500;background:var(--panel);border:1px solid var(--border2);padding:8px 10px;width:212px;max-height:calc(100% - 90px);overflow-y:auto}
+.ic-title{font-size:7.5px;letter-spacing:2px;color:var(--accent);margin-bottom:6px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:space-between}
+.ic-grp{font-size:6.5px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin:7px 0 4px;border-top:1px solid var(--border);padding-top:5px}
+.ic-row{display:flex;align-items:center;gap:5px;margin-bottom:3px;cursor:pointer}
+.ic-cb{width:10px;height:10px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.ic-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.ic-lbl{font-size:8px;color:var(--text2);line-height:1.2}
+.ic-badge{font-family:'JetBrains Mono',monospace;font-size:6px;padding:1px 3px;background:rgba(46,213,115,.1);border:1px solid rgba(46,213,115,.3);color:var(--ok);margin-left:auto;white-space:nowrap}
+.ic-badge.warn{background:rgba(255,165,2,.1);border-color:rgba(255,165,2,.3);color:var(--warning)}
+.ic-badge.off{background:rgba(85,93,110,.12);border-color:var(--border);color:var(--text3)}
+.mfbar{position:absolute;top:8px;left:228px;right:8px;z-index:500;display:flex;gap:2px;background:var(--panel);border:1px solid var(--border2);padding:3px;overflow-x:auto}
+.fb{flex:none;background:transparent;border:1px solid var(--border);color:var(--text3);padding:3px 8px;font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.5px;cursor:pointer;text-transform:uppercase;transition:all .2s;white-space:nowrap}
+.fb.a{background:var(--accent);color:#07090f;border-color:var(--accent)}
+.fb:hover:not(.a){border-color:var(--border2);color:var(--text)}
+.subfilter-bar{position:absolute;top:42px;left:228px;right:8px;z-index:499;display:none;gap:2px;background:rgba(10,12,20,0.95);border:1px solid var(--border);padding:2px;overflow-x:auto}
+.subfilter-bar.show{display:flex}
+.sfb{flex:none;background:transparent;border:1px solid var(--border);color:var(--text3);padding:2px 7px;font-family:'JetBrains Mono',monospace;font-size:6.5px;letter-spacing:.5px;cursor:pointer;text-transform:uppercase;transition:all .2s;white-space:nowrap}
+.sfb.a{background:rgba(232,197,71,.15);color:var(--accent);border-color:var(--accent)}
+.sfb:hover:not(.a){color:var(--text)}
+.map-status-bar{position:absolute;bottom:0;left:0;right:0;z-index:500;background:rgba(7,9,15,0.9);border-top:1px solid var(--border);padding:4px 10px;display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:7.5px;color:var(--text3);flex-wrap:wrap}
+.msb-item{display:flex;align-items:center;gap:4px}
+.msb-dot{width:5px;height:5px;border-radius:50%}
+.mleg{position:absolute;bottom:28px;right:8px;z-index:500;background:var(--panel);border:1px solid var(--border2);padding:7px 9px}
+.mli{display:flex;align-items:center;gap:5px;margin-bottom:2px;font-size:7.5px;color:var(--text2)}
+.mld{width:8px;height:8px;border-radius:50%}.mls{width:8px;height:4px;border-radius:1px}
+.sleg{position:absolute;bottom:28px;left:8px;z-index:500;background:var(--panel);border:1px solid var(--border2);padding:7px 9px}
+.leaflet-popup-content-wrapper{background:var(--panel)!important;border:1px solid var(--border2)!important;border-radius:0!important;box-shadow:0 8px 32px rgba(0,0,0,.7)!important;color:var(--text)!important}
+.leaflet-popup-tip{background:var(--bg2)!important}
+.leaflet-popup-content{margin:9px 11px!important}
+.poph4{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;margin-bottom:2px}
+.popmeta{font-family:'JetBrains Mono',monospace;font-size:7.5px;color:var(--text3);margin-bottom:4px}
+.pop-status{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:7px;padding:2px 6px;margin-bottom:4px}
+.pop-status.ok{background:rgba(46,213,115,.15);color:#2ed573;border:1px solid rgba(46,213,115,.3)}
+.pop-status.warn{background:rgba(255,165,2,.15);color:#ffa502;border:1px solid rgba(255,165,2,.3)}
+.pop-status.alert{background:rgba(255,71,87,.15);color:#ff4757;border:1px solid rgba(255,71,87,.3)}
+.pop-status.works{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
+.pop-status.monitor{background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3)}
+.popdesc{font-size:9px;color:var(--text2);line-height:1.45;margin-bottom:4px}
+.popupdate{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--accent3);margin-bottom:4px}
+.poprefs a{display:block;font-size:8px;color:var(--accent3);text-decoration:none;margin-bottom:2px;font-family:'JetBrains Mono',monospace}
+.poprefs a:hover{text-decoration:underline}
+.pop-geo-news{margin-top:6px;border-top:1px solid var(--border);padding-top:5px}
+.pgn-lbl{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--purple);letter-spacing:1px;margin-bottom:4px}
+.pgn-item{font-size:8px;color:var(--text);margin-bottom:5px;line-height:1.35;border-left:2px solid rgba(167,139,250,.3);padding-left:5px}
+.pgn-item a{color:var(--accent3);text-decoration:none;font-size:7.5px;display:inline}
+.pgn-item a:hover{text-decoration:underline;color:var(--accent)}
+.pgn-src{font-family:'JetBrains Mono',monospace;font-size:6.5px;color:var(--purple);display:block;margin-bottom:1px}
+.pgn-dt{font-family:'JetBrains Mono',monospace;font-size:6px;color:var(--text3);display:block;margin-top:1px}
+.pop-geo-btn{display:block;width:100%;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:var(--purple);padding:4px 6px;font-family:'JetBrains Mono',monospace;font-size:7px;cursor:pointer;text-align:center;margin-top:5px;text-transform:uppercase;letter-spacing:.5px;text-decoration:none}
+.pop-geo-btn:hover{background:rgba(167,139,250,.2)}
+.tunnel-live{background:var(--bg4);border:1px solid var(--border);padding:5px 7px;margin-top:4px;border-radius:1px}
+.tl-hdr{font-family:'JetBrains Mono',monospace;font-size:6.5px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.tl-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.tl-lbl{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3)}
+.tl-val{font-family:'JetBrains Mono',monospace;font-size:7.5px;font-weight:600}
+.tl-val.verde{color:#2ed573}.tl-val.giallo{color:#ffa502}.tl-val.rosso{color:#ff4757}.tl-val.grigio{color:#555d6e}
+.tl-update{font-family:'JetBrains Mono',monospace;font-size:6px;color:var(--text3);margin-top:3px;border-top:1px solid var(--border);padding-top:2px}
+#rp{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.rtabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.rtab{flex:none;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);padding:7px 8px;font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.7px;cursor:pointer;text-transform:uppercase;transition:all .2s;margin-bottom:-1px;white-space:nowrap}
+.rtab.a{color:var(--accent);border-bottom-color:var(--accent)}
+.rcontent{flex:1;overflow-y:auto;padding:8px}
+.rpane{display:none}.rpane.a{display:block}
+.fi{border-bottom:1px solid var(--border);padding:7px 0;text-decoration:none;display:block;transition:opacity .2s}
+.fi:hover{opacity:.7}
+.fi-src{font-family:'JetBrains Mono',monospace;font-size:7.5px;letter-spacing:.8px;margin-bottom:2px}
+.fi-src.acn{color:#ff6b35}.fi-src.certeu{color:var(--accent3)}.fi-src.mimit{color:var(--accent)}.fi-src.cisa{color:#f87171}.fi-src.geo{color:var(--purple)}.fi-src.ansa{color:#60a5fa}.fi-src.rep{color:#f87171}.fi-src.stampa{color:#34d399}
+.fi-hl{font-size:9px;color:var(--text);line-height:1.35;margin-bottom:2px}
+.fi-dt{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3)}
+.ferr{font-family:'JetBrains Mono',monospace;font-size:7.5px;color:var(--warning);padding:3px 5px;background:rgba(255,165,2,.06);border:1px solid rgba(255,165,2,.2);margin-bottom:3px;line-height:1.5}
+.ferr a{color:var(--accent3);text-decoration:none}
+.fload{display:flex;align-items:center;gap:8px;padding:12px 0;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3)}
+.dots span{display:inline-block;width:5px;height:5px;background:var(--accent);border-radius:50%;margin:0 2px;animation:db 1.4s infinite ease-in-out both}
+.dots span:nth-child(1){animation-delay:-.32s}.dots span:nth-child(2){animation-delay:-.16s}
+@keyframes db{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+.infra-item{background:var(--bg3);border:1px solid var(--border);padding:6px 8px 6px 12px;margin-bottom:3px;position:relative}
+.infra-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.infra-item.ok::before{background:#2ed573}.infra-item.warn::before{background:#ffa502}.infra-item.alert::before{background:#ff4757}.infra-item.monitor::before{background:#a78bfa}.infra-item.works::before{background:#f59e0b}.infra-item.unknown::before{background:#555d6e}
+.ii-head{display:flex;justify-content:space-between;align-items:flex-start;gap:4px}
+.ii-name{font-size:9.5px;color:var(--text);font-weight:500;flex:1}.ii-type{font-family:'JetBrains Mono',monospace;font-size:6.5px;color:var(--text3);margin-top:1px}
+.ii-sbadge{font-family:'JetBrains Mono',monospace;font-size:6.5px;padding:1px 4px;white-space:nowrap;flex-shrink:0}
+.ii-sbadge.ok{color:#2ed573;background:rgba(46,213,115,.08);border:1px solid rgba(46,213,115,.2)}
+.ii-sbadge.warn{color:#ffa502;background:rgba(255,165,2,.08);border:1px solid rgba(255,165,2,.2)}
+.ii-sbadge.alert{color:#ff4757;background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.2)}
+.ii-sbadge.monitor{color:#a78bfa;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2)}
+.ii-sbadge.works{color:#f59e0b;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)}
+.ii-sbadge.unknown{color:#555d6e;background:rgba(85,93,110,.08);border:1px solid var(--border)}
+.ii-note{font-size:8px;color:var(--text3);margin-top:2px;line-height:1.35}
+.ii-update{font-family:'JetBrains Mono',monospace;font-size:6.5px;color:var(--accent3);margin-top:2px}
+.ii-refs{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px}
+.ii-ref{font-size:7px;color:var(--accent3);text-decoration:none;font-family:'JetBrains Mono',monospace;padding:1px 4px;border:1px solid rgba(74,158,255,.2)}
+.ii-ref:hover{background:rgba(74,158,255,.08)}
+.infra-grp-hdr{font-family:'JetBrains Mono',monospace;font-size:7.5px;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;margin:8px 0 4px;display:flex;align-items:center;gap:6px}
+.infra-grp-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
+.filter-strip{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:7px}
+.geo-item{border-bottom:1px solid var(--border);padding:6px 0}
+.geo-src{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.8px;margin-bottom:2px}
+.geo-title{font-size:9px;color:var(--text);line-height:1.35;margin-bottom:2px}
+.geo-title a{color:var(--text);text-decoration:none}
+.geo-title a:hover{color:var(--accent)}
+.geo-dt{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3)}
+#geo-city-filter{font-family:'JetBrains Mono',monospace;font-size:7.5px;color:var(--accent);padding:4px 0;margin-bottom:5px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal{position:fixed;top:50px;left:0;right:0;bottom:0;z-index:2000;background:rgba(7,9,15,.97);backdrop-filter:blur(10px);display:none;overflow-y:auto}
+.modal.a{display:block}
+.mhdr{padding:14px 18px 10px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(7,9,15,.98);z-index:10}
+.mttl{font-family:'Syne',sans-serif;font-weight:800;font-size:14px}
+.msub{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);margin-top:2px;letter-spacing:1px}
+.mcls{background:transparent;border:1px solid var(--border2);color:var(--text2);width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.mcls:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.mbody{padding:18px;max-width:680px;margin:0 auto}
+.sg{margin-bottom:18px}.sl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:6px}
+.ir{display:flex;gap:5px}
+.ci{flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:6px 9px;font-family:'JetBrains Mono',monospace;font-size:10px;outline:none;transition:border-color .2s}
+.ci:focus{border-color:var(--accent)}.ci[type=password]{letter-spacing:2px}
+.bsk{background:var(--accent);color:#07090f;border:none;padding:7px 12px;font-family:'Syne',sans-serif;font-weight:700;font-size:10px;cursor:pointer}
+.kst{font-family:'JetBrains Mono',monospace;font-size:9px;margin-top:5px}
+.kst.ok{color:var(--ok)}.kst.no{color:var(--text3)}
+.sep{height:1px;background:var(--border);margin:14px 0}
+.fsi{display:flex;align-items:flex-start;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);gap:8px}
+.fsn{font-size:10px;color:var(--text);font-weight:500}.fsu{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3);margin-top:1px}
+.fsno{font-size:8.5px;color:var(--text3);margin-top:2px;line-height:1.4}
+.badge{font-family:'JetBrains Mono',monospace;font-size:7px;padding:2px 5px;letter-spacing:.8px;flex-shrink:0;margin-top:2px}
+.badge.ok{background:rgba(46,213,115,.1);border:1px solid rgba(46,213,115,.3);color:var(--ok)}
+.badge.warn{background:rgba(255,165,2,.1);border:1px solid rgba(255,165,2,.3);color:var(--warning)}
+.badge.off{background:rgba(85,93,110,.12);border:1px solid var(--border);color:var(--text3)}
+#rep-modal{display:none;position:fixed;top:50px;left:0;right:0;bottom:0;z-index:2000;background:rgba(7,9,15,.97);backdrop-filter:blur(10px);flex-direction:column}
+#rep-modal.a{display:flex}
+.rmbody{flex:1;overflow:hidden;display:grid;grid-template-columns:220px 1fr}
+.rcfg{border-right:1px solid var(--border);padding:12px;overflow-y:auto;background:var(--bg2)}
+.rout{padding:16px;overflow-y:auto;position:relative}
+.csel,.ctxt{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:6px 8px;font-family:'Instrument Sans',sans-serif;font-size:10.5px;outline:none;margin-bottom:7px}
+.csel:focus,.ctxt:focus{border-color:var(--accent)}.ctxt{resize:vertical;min-height:50px;line-height:1.5}
+.cs{margin-bottom:10px}
+.ck{display:flex;align-items:center;gap:5px;margin-bottom:3px;cursor:pointer}
+.ck input{accent-color:var(--accent);width:10px;height:10px}
+.ck label{font-size:9px;color:var(--text2);cursor:pointer}
+.bgen{width:100%;background:var(--accent);color:#07090f;border:none;padding:7px;font-family:'Syne',sans-serif;font-weight:800;font-size:10px;letter-spacing:1px;cursor:pointer;margin-top:2px}
+.bgen:hover{background:#f5d45e}.bgen:disabled{background:var(--bg3);color:var(--text3);cursor:not-allowed}
+.bsav{width:100%;background:transparent;color:var(--accent3);border:1px solid rgba(74,158,255,.3);padding:5px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1px;cursor:pointer;margin-top:3px}
+.rmeta{font-family:'JetBrains Mono',monospace;font-size:7.5px;color:var(--text3);letter-spacing:1px;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.ract{display:flex;gap:3px;margin-bottom:5px}
+.bact{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:3px 7px;font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.8px;cursor:pointer;text-transform:uppercase}
+.bact:hover{border-color:var(--accent3);color:var(--accent3)}
+.rcont{font-size:11px;line-height:1.7;color:var(--text2)}
+.rcont h2{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin:16px 0 6px}
+.rcont h3{font-family:'Syne',sans-serif;font-weight:600;font-size:9px;color:var(--accent);margin:8px 0 3px;letter-spacing:.5px;text-transform:uppercase}
+.rcont p{margin-bottom:6px}
+.think{display:flex;align-items:center;gap:10px;padding:36px 0;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3)}
+.rph{color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;padding:50px 0;text-align:center;line-height:2.5}
+.nokw{background:rgba(255,165,2,.07);border:1px solid rgba(255,165,2,.2);padding:8px;margin-bottom:8px}
+.nokw p{font-size:9px;color:var(--warning);line-height:1.6}
+.nokw a{color:var(--accent);cursor:pointer;text-decoration:underline}
+.srep{background:var(--bg3);border:1px solid var(--border);padding:7px 9px;margin-bottom:3px}
+.srep-t{font-size:10px;color:var(--text);font-weight:500}
+.srep-m{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3);margin-top:2px;line-height:1.5}
+.srep-a{display:flex;gap:3px;margin-top:4px}
+.sb{background:transparent;border:1px solid var(--border);color:var(--text3);padding:2px 6px;font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.8px;cursor:pointer;text-transform:uppercase}
+.sb:hover{border-color:var(--border2);color:var(--text)}.sb.del:hover{border-color:var(--danger);color:var(--danger)}
+.km-link{stroke:rgba(255,255,255,.06);stroke-width:1;fill:none}
+.km-link.strong{stroke:rgba(232,197,71,.2);stroke-width:1.5}
+.km-link.critical{stroke:rgba(255,71,87,.3);stroke-width:2}
+#radar-svg,#km-svg{width:100%;height:100%}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--border2)}::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<header id="hdr">
+  <div class="logo"><div class="logo-sq">OSS</div><div><div class="logo-tx">OSSERVATORIO · INFRASTRUTTURE CRITICHE ITALIA</div><div class="logo-sx">Politecnico di Torino — SVP Industries · v8.0 · 2026</div></div></div>
+  <div class="hdr-mid"><div class="live-dot" id="ldot"></div><span id="fstat">INIT...</span><span style="margin:0 5px;color:rgba(255,255,255,.07)">|</span><span id="live-counters">—</span><span style="margin:0 5px;color:rgba(255,255,255,.07)">|</span><span id="infra-alert-hdr" style="color:var(--danger);font-weight:600"></span></div>
+  <div class="hdr-r"><div id="clk"></div><button class="hbtn" onclick="openSet()">⚙ IMPOSTAZIONI</button><button class="hbtn prim" onclick="openRep()">⬡ REPORT AI</button></div>
+</header>
+<div id="app">
+  <!-- LEFT PANEL -->
+  <div id="lp">
+    <div><div class="ptit">Indice Rischio Sistemico</div><div class="kgrid">
+      <div class="kpi w"><div class="kv w">67</div><div class="kl">RISCHIO<br>GLOBALE IT</div><div class="kd">↑ <span>+4</span> 30gg</div></div>
+      <div class="kpi d"><div class="kv d" id="kpi-adv">—</div><div class="kl">ALERT<br>CSIRT-IT</div><div class="kd" id="kpi-adv-d">caricamento...</div></div>
+      <div class="kpi d"><div class="kv d" id="kpi-alert">6</div><div class="kl">INFRA<br>IN ALLERTA</div><div class="kd">Ferro+porti+trafori</div></div>
+      <div class="kpi p"><div class="kv p" id="kpi-live">—</div><div class="kl">VEICOLI<br>LIVE</div><div class="kd" id="kpi-live-d">aerei+navi</div></div>
+    </div></div>
+    <div><div class="ptit">Esposizione Settori</div><div id="sbars"></div></div>
+    <div><div class="ptit">Minacce Attive 2025/26</div><div id="thlist"></div></div>
+  </div>
+  <!-- CENTER MAP -->
+  <div id="ctr">
+    <div class="view-tabs">
+      <button class="vtab a" onclick="switchView('map',this)">🗺 MAPPA LIVE</button>
+      <button class="vtab" onclick="switchView('km',this)">⬡ KNOWLEDGE MAP</button>
+      <button class="vtab" onclick="switchView('radar',this)">◎ RADAR CRITICITÀ</button>
+    </div>
+    <div class="view-pane a" id="vp-map" style="flex:1">
+      <!-- LAYER CONTROL -->
+      <div id="infra-ctrl">
+        <div class="ic-title">⊞ Layer <button onclick="document.getElementById('infra-ctrl').style.display='none'" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:9px">✕</button></div>
+        <div class="ic-grp">🚢 Portualità &amp; Traffico Marittimo</div>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-ports" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#3b82f6"></div><span class="ic-lbl">Porti strategici (14)</span></label>
+        <label class="ic-row" title="Richiede chiave AISstream.io — tutta Italia"><input class="ic-cb" type="checkbox" id="ly-ais" onchange="toggleAIS()"><div class="ic-dot" style="background:#93c5fd;border-radius:50%"></div><span class="ic-lbl">Navi AIS live — acque IT</span><span class="ic-badge" id="ais-badge" style="display:none">0</span><span class="ic-badge off" id="ais-nokey">NO KEY</span></label>
+        <label class="ic-row" id="row-ais-cargo" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-cargo" checked onchange="filterShips()"><div class="ic-dot" style="background:#60a5fa;border-radius:50%"></div><span class="ic-lbl">Cargo / Container</span></label>
+        <label class="ic-row" id="row-ais-tanker" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-tanker" checked onchange="filterShips()"><div class="ic-dot" style="background:#f97316;border-radius:50%"></div><span class="ic-lbl">Tanker / GNL</span></label>
+        <label class="ic-row" id="row-ais-pass" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-pass" checked onchange="filterShips()"><div class="ic-dot" style="background:#a78bfa;border-radius:50%"></div><span class="ic-lbl">Passeggeri / Crociere</span></label>
+        <label class="ic-row" id="row-ais-mil" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-mil" checked onchange="filterShips()"><div class="ic-dot" style="background:#f87171;border-radius:50%"></div><span class="ic-lbl">Militari / G.Costiera</span></label>
+        <div class="ic-grp">✈ Aviazione</div>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-airports" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#8b5cf6"></div><span class="ic-lbl">Aeroporti (20)</span></label>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-flights" onchange="toggleFlights()"><div class="ic-dot" style="background:#c084fc;border-radius:50%"></div><span class="ic-lbl">Voli live (OpenSky)</span><span class="ic-badge" id="flights-badge" style="display:none">0</span></label>
+        <label class="ic-row" id="row-flights-mil" style="display:none"><input class="ic-cb" type="checkbox" id="ly-flights-mil" checked onchange="filterFlights()"><div class="ic-dot" style="background:#f87171;border-radius:50%"></div><span class="ic-lbl">Militari (AMI/Marina/GdF)</span></label>
+        <label class="ic-row" id="row-flights-gov" style="display:none"><input class="ic-cb" type="checkbox" id="ly-flights-gov" checked onchange="filterFlights()"><div class="ic-dot" style="background:#fb923c;border-radius:50%"></div><span class="ic-lbl">Gov (Pol/Car/PCI)</span></label>
+        <label class="ic-row" id="row-flights-civ" style="display:none"><input class="ic-cb" type="checkbox" id="ly-flights-civ" checked onchange="filterFlights()"><div class="ic-dot" style="background:#a78bfa;border-radius:50%"></div><span class="ic-lbl">Commerciali</span></label>
+        <div class="ic-grp">🚆 Ferrovia (OSM dettagliato)</div>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-rail-nodes" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#06b6d4"></div><span class="ic-lbl">Nodi RFI/AV (8)</span></label>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-rail-net" onchange="toggleRailNet()"><div class="ic-dot" style="background:#0e7490;border-radius:50%"></div><span class="ic-lbl">Rete ferroviaria OSM</span><span class="ic-badge warn" id="rail-badge">OSM</span></label>
+        <div class="ic-grp">🛣 Autostrade &amp; Trafori</div>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-tunnels" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#f59e0b"></div><span class="ic-lbl">Trafori — status live</span></label>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-highway" onchange="toggleHighway()"><div class="ic-dot" style="background:#d97706;border-radius:50%"></div><span class="ic-lbl">Rete autostradale</span><span class="ic-badge warn" id="hw-badge">OSM</span></label>
+        <label class="ic-row" title="HERE API key nelle impostazioni"><input class="ic-cb" type="checkbox" id="ly-traffic" onchange="toggleTraffic()"><div class="ic-dot" style="background:#dc2626;border-radius:50%"></div><span class="ic-lbl">Traffico HERE live</span><span class="ic-badge off" id="traffic-badge">NO KEY</span></label>
+        <div class="ic-grp">⚡ Energia TERNA + SNAM</div>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-power" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#eab308"></div><span class="ic-lbl">Nodi elettrici TERNA</span></label>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-power-net" onchange="togglePowerNet()"><div class="ic-dot" style="background:#ca8a04;border-radius:50%"></div><span class="ic-lbl">Rete AT 380kV TERNA</span><span class="ic-badge" id="pnet-badge">LIVE</span></label>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-gas" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#f97316"></div><span class="ic-lbl">Gas / GNL / FSRU (5)</span></label>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-gas-net" onchange="toggleGasNet()"><div class="ic-dot" style="background:#c2410c;border-radius:50%"></div><span class="ic-lbl">Gasdotti SNAM</span><span class="ic-badge" id="gnet-badge">LIVE</span></label>
+        <div class="ic-grp">🏭 Raffinerie &amp; Petrolchimica</div>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-petrochem" onchange="renderAllLayers()"><div class="ic-dot" style="background:#7c3aed;border-radius:50%"></div><span class="ic-lbl">Raffinerie + Petrolchimica</span><span class="ic-badge" id="petro-badge">12</span></label>
+        <div class="ic-grp">🌍 Rischio Geopolitico</div>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-risk" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#ff4757;border-radius:50%"></div><span class="ic-lbl">Hotspot rischio geo</span></label>
+        <div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
+          <button style="width:100%;background:transparent;border:1px solid var(--border2);color:var(--text3);padding:4px;font-family:'JetBrains Mono',monospace;font-size:7px;cursor:pointer;text-transform:uppercase;letter-spacing:1px" onclick="document.getElementById('infra-ctrl').style.display='none'">▲ Nascondi</button>
+        </div>
+      </div>
+      <button id="show-layers-btn" style="display:none;position:absolute;top:8px;left:8px;z-index:501;background:var(--panel);border:1px solid var(--border2);color:var(--text3);padding:5px 8px;font-family:'JetBrains Mono',monospace;font-size:7.5px;cursor:pointer;letter-spacing:1px;text-transform:uppercase" onclick="document.getElementById('infra-ctrl').style.display='';this.style.display='none'">⊞ Layer</button>
+      <div class="mfbar">
+        <button class="fb a" id="fb-all" onclick="setMainFilter('all',this)">TUTTI</button>
+        <button class="fb" id="fb-ports" onclick="setMainFilter('ports',this)">PORTI</button>
+        <button class="fb" id="fb-airports" onclick="setMainFilter('airports',this)">AEREI</button>
+        <button class="fb" id="fb-rail" onclick="setMainFilter('rail',this)">FERRO</button>
+        <button class="fb" id="fb-tunnels" onclick="setMainFilter('tunnels',this)">TRAFORI</button>
+        <button class="fb" id="fb-energy" onclick="setMainFilter('energy',this)">ENERGIA</button>
+        <button class="fb" id="fb-petro" onclick="setMainFilter('petro',this)">PETRO</button>
+        <button class="fb" id="fb-risk" onclick="setMainFilter('risk',this)">GEO</button>
+      </div>
+      <div class="subfilter-bar" id="subfilter-bar"></div>
+      <div id="map"></div>
+      <div class="map-status-bar">
+        <div class="msb-item"><div class="msb-dot" style="background:var(--ok)"></div><span id="sb-flights">Voli: OFF</span></div>
+        <div class="msb-item"><div class="msb-dot" style="background:#3b82f6"></div><span id="sb-ships">Navi: OFF</span></div>
+        <div class="msb-item"><div class="msb-dot" style="background:var(--warning)"></div><span id="sb-traffic">Traffico: —</span></div>
+        <div class="msb-item"><div class="msb-dot" style="background:var(--purple)"></div><span id="sb-tunnels">Trafori: —</span></div>
+        <div class="msb-item" style="margin-left:auto"><span id="sb-last-update" style="color:var(--text3)">↻ —</span></div>
+      </div>
+      <div class="sleg" style="bottom:32px">
+        <div class="ptit" style="margin-bottom:3px">Status</div>
+        <div class="mli"><div class="mld" style="background:#2ed573"></div>OPERATIVA</div>
+        <div class="mli"><div class="mld" style="background:#f59e0b"></div>IN LAVORI</div>
+        <div class="mli"><div class="mld" style="background:#ffa502"></div>MONITORAGGIO</div>
+        <div class="mli"><div class="mld" style="background:#ff4757"></div>IN ALLERTA</div>
+        <div class="mli"><div class="mld" style="background:#a78bfa"></div>SCRUTINIO GP</div>
+      </div>
+      <div class="mleg" style="bottom:32px">
+        <div class="ptit" style="margin-bottom:3px">Layer</div>
+        <div class="mli"><div class="mls" style="background:#3b82f6"></div>Porto</div>
+        <div class="mli"><div class="mls" style="background:#8b5cf6"></div>Aeroporto</div>
+        <div class="mli"><div class="mls" style="background:#06b6d4"></div>Nodo RFI</div>
+        <div class="mli"><div class="mls" style="background:#f59e0b"></div>Traforo</div>
+        <div class="mli"><div class="mls" style="background:#eab308;border-radius:50%"></div>Elettrico</div>
+        <div class="mli"><div class="mls" style="background:#f97316;border-radius:50%"></div>Gas/GNL</div>
+        <div class="mli"><div class="mld" style="background:#7c3aed"></div>Petrolchimica</div>
+        <div class="mli"><div class="mld" style="background:#ff4757"></div>Geo risk</div>
+        <div class="mli"><div class="mld" style="background:#93c5fd"></div>Nave AIS</div>
+        <div class="mli"><div class="mld" style="background:#c084fc"></div>Volo live</div>
+      </div>
+    </div>
+    <div class="view-pane" id="vp-km" style="flex:1"><svg id="km-svg" xmlns="http://www.w3.org/2000/svg"><g id="km-links"></g><g id="km-nodes"></g></svg></div>
+    <div class="view-pane" id="vp-radar" style="flex:1"><svg id="radar-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  </div>
+  <!-- RIGHT PANEL -->
+  <div id="rp">
+    <div class="rtabs">
+      <button class="rtab a" onclick="swRT('infra',this)">INFRA</button>
+      <button class="rtab" onclick="swRT('feed',this)">FEED</button>
+      <button class="rtab" onclick="swRT('geo',this)">GEO NEWS</button>
+      <button class="rtab" onclick="swRT('saved',this)">REPORT</button>
+    </div>
+    <div class="rcontent">
+      <div class="rpane a" id="rp-infra"><div id="infralist"></div></div>
+      <div class="rpane" id="rp-feed">
+        <div style="display:flex;gap:3px;margin-bottom:6px;flex-wrap:wrap" id="feed-grp-strip"></div>
+        <div id="flist"></div>
+      </div>
+      <div class="rpane" id="rp-geo">
+        <div id="geo-city-filter" style="display:none">
+          <span id="geo-city-lbl" style="color:var(--accent)">📍 Filtrando per: —</span>
+          <button onclick="clearGeoFilter()" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0 4px">✕ tutti</button>
+        </div>
+        <div id="geolist"></div>
+      </div>
+      <div class="rpane" id="rp-saved"><div id="slist"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="modal-settings" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:24px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px">
+      <h2 style="margin:0;font-size:14px;color:var(--text1)">⚙️ IMPOSTAZIONI</h2>
+      <button onclick="document.getElementById('modal-settings').style.display='none'" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:18px">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">🔑 AISstream API Key</label>
+        <input id="cfg-ais" type="password" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:6px 10px;color:var(--text1);font-size:12px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">🗺️ HERE Maps API Key</label>
+        <input id="cfg-here" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" style="width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:6px 10px;color:var(--text1);font-size:12px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">🤖 Anthropic API Key</label>
+        <input id="cfg-claude" type="password" placeholder="sk-ant-api03-..." style="width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:6px 10px;color:var(--text1);font-size:12px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">🔄 Aggiornamento voli (sec)</label>
+        <input id="cfg-interval" type="number" value="30" min="10" max="120" style="width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:6px 10px;color:var(--text1);font-size:12px;box-sizing:border-box">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="saveSettings()" style="flex:1;background:var(--accent);border:none;border-radius:4px;padding:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer">💾 SALVA</button>
+        <button onclick="document.getElementById('modal-settings').style.display='none'" style="flex:1;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:8px;color:var(--text2);font-size:12px;cursor:pointer">ANNULLA</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT AI MODAL -->
+<div id="modal-report" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:24px;max-width:680px;width:95%;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px">
+      <h2 style="margin:0;font-size:14px;color:var(--text1)">🤖 REPORT INTELLIGENZA AI</h2>
+      <button onclick="document.getElementById('modal-report').style.display='none'" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:18px">×</button>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Focus analisi</label>
+      <select id="rep-focus" style="width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:6px 10px;color:var(--text1);font-size:12px">
+        <option value="all">Panoramica completa</option>
+        <option value="maritime">Traffico marittimo</option>
+        <option value="air">Traffico aereo mil/gov</option>
+        <option value="energy">Reti energetiche</option>
+        <option value="geo">Rischio geopolitico</option>
+      </select>
+    </div>
+    <div id="rep-out" style="background:var(--bg3);border:1px solid var(--brd);border-radius:6px;padding:12px;min-height:200px;font-size:12px;color:var(--text2);line-height:1.6;white-space:pre-wrap">Clicca GENERA per produrre il report AI…</div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="generateReport()" style="flex:1;background:var(--accent);border:none;border-radius:4px;padding:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer">⚡ GENERA</button>
+      <button onclick="saveReport()" style="flex:1;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:8px;color:var(--text2);font-size:12px;cursor:pointer">💾 SALVA</button>
+      <button onclick="document.getElementById('modal-report').style.display='none'" style="background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:8px 16px;color:var(--text2);font-size:12px;cursor:pointer">CHIUDI</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────── CONFIG ────────────────────────────────────────
+const CFG = {
+  aisKey: localStorage.getItem('cfg_ais') || '',
+  hereKey: localStorage.getItem('cfg_here') || '',
+  claudeKey: localStorage.getItem('cfg_claude') || '',
+  interval: parseInt(localStorage.getItem('cfg_interval') || '30')
+};
+
+function saveSettings() {
+  CFG.aisKey = document.getElementById('cfg-ais').value;
+  CFG.hereKey = document.getElementById('cfg-here').value;
+  CFG.claudeKey = document.getElementById('cfg-claude').value;
+  CFG.interval = parseInt(document.getElementById('cfg-interval').value || '30');
+  localStorage.setItem('cfg_ais', CFG.aisKey);
+  localStorage.setItem('cfg_here', CFG.hereKey);
+  localStorage.setItem('cfg_claude', CFG.claudeKey);
+  localStorage.setItem('cfg_interval', CFG.interval);
+  document.getElementById('modal-settings').style.display = 'none';
+  if (flightTimer) { clearInterval(flightTimer); fetchFlights(); flightTimer = setInterval(fetchFlights, CFG.interval * 1000); }
+}
+
+function openSettings() {
+  document.getElementById('cfg-ais').value = CFG.aisKey;
+  document.getElementById('cfg-here').value = CFG.hereKey;
+  document.getElementById('cfg-claude').value = CFG.claudeKey;
+  document.getElementById('cfg-interval').value = CFG.interval;
+  document.getElementById('modal-settings').style.display = 'flex';
+}
+
+// ─────────────────────────── STATIC DATA ──────────────────────────────────
+const INFRA = {
+  ports: [
+    {name:'Gioia Tauro',lat:38.43,lng:15.9,type:'porto',status:'op',t:'Hub transhipment, 3.1M TEU/a'},
+    {name:'Genova',lat:44.41,lng:8.93,type:'porto',status:'op',t:'Primo porto italiano per merci, 60Mt/a'},
+    {name:'Trieste',lat:45.65,lng:13.77,type:'porto',status:'op',t:'Porto petrolifero strategico, oleodotto TAL'},
+    {name:'Taranto',lat:40.46,lng:17.23,type:'porto',status:'mon',t:'Hub acciaio/cereali, riconversione in corso'},
+    {name:'La Spezia',lat:44.1,lng:9.82,type:'porto',status:'op',t:'Porto container, gate nord Italia'},
+    {name:'Napoli',lat:40.85,lng:14.27,type:'porto',status:'op',t:'Porto passeggeri e merci, crociere'},
+    {name:'Palermo',lat:38.12,lng:13.37,type:'porto',status:'op',t:'Porto Sicilia, ro-ro e passeggeri'},
+    {name:'Civitavecchia',lat:42.09,lng:11.79,type:'porto',status:'op',t:'Porto Roma, crociere e ro-ro'},
+    {name:'Ancona',lat:43.62,lng:13.51,type:'porto',status:'op',t:'Hub Adriatico centro, ferry Grecia'},
+    {name:'Venezia',lat:45.44,lng:12.32,type:'porto',status:'mon',t:'Porto storico, accesso canale Malamocco'},
+    {name:'Livorno',lat:43.55,lng:10.31,type:'porto',status:'op',t:'Porto Toscana, container e ro-ro'},
+    {name:'Augusta',lat:37.23,lng:15.22,type:'porto',status:'mon',t:'Porto petrolifero Sicilia, terminal ISAB'}
+  ],
+  airports: [
+    {name:'Roma Fiumicino',lat:41.8,lng:12.23,type:'aeroporto',status:'op',t:'Primo scalo italiano, 40M pax/a, hub Alitalia/ITA'},
+    {name:'Milano Malpensa',lat:45.63,lng:8.72,type:'aeroporto',status:'op',t:'Hub cargo nord Italia, 28M pax/a'},
+    {name:'Milano Linate',lat:45.45,lng:9.27,type:'aeroporto',status:'op',t:'Scalo city, 10M pax/a'},
+    {name:'Orio al Serio',lat:45.67,lng:9.7,type:'aeroporto',status:'op',t:'Hub low-cost, terzo scalo italiano'},
+    {name:'Napoli Capodichino',lat:40.88,lng:14.29,type:'aeroporto',status:'op',t:'Scalo sud, 11M pax/a'},
+    {name:'Catania Fontanarossa',lat:37.47,lng:15.07,type:'aeroporto',status:'op',t:'Primo scalo Sicilia'},
+    {name:'Venezia Marco Polo',lat:45.5,lng:12.35,type:'aeroporto',status:'op',t:'Hub nord-est, 11M pax/a'},
+    {name:'Bologna Marconi',lat:44.53,lng:11.29,type:'aeroporto',status:'op',t:'Hub centro-nord, 9M pax/a'},
+    {name:'Palermo Falcone-Borsellino',lat:38.18,lng:13.1,type:'aeroporto',status:'op',t:'Secondo scalo Sicilia'},
+    {name:'Bari Karol Wojtyla',lat:41.14,lng:16.76,type:'aeroporto',status:'op',t:'Hub Puglia'},
+    {name:'Torino Caselle',lat:45.21,lng:7.65,type:'aeroporto',status:'op',t:'Scalo Piemonte'},
+    {name:'Pisa Galilei',lat:43.68,lng:10.39,type:'aeroporto',status:'op',t:'Scalo Toscana, uso militare AMI'},
+    {name:'Pratica di Mare',lat:41.65,lng:12.44,type:'aeroporto',status:'op',t:'Base AMI - Aeronautica Militare'},
+    {name:'Decimomannu',lat:39.35,lng:8.97,type:'aeroporto',status:'op',t:'Base AMI Sardegna, NATO ACMI Range'},
+    {name:'Aviano',lat:46.03,lng:12.6,type:'aeroporto',status:'op',t:'Base USAF 31st FW - NATO'}
+  ],
+  railnodes: [
+    {name:'Torino Porta Susa',lat:45.07,lng:7.67,type:'nodo_rfi',status:'op',t:'Nodo AV Torino-Milano-Napoli'},
+    {name:'Milano Centrale',lat:45.49,lng:9.2,type:'nodo_rfi',status:'op',t:'Principale hub ferroviario Italia'},
+    {name:'Roma Termini',lat:41.9,lng:12.5,type:'nodo_rfi',status:'op',t:'Hub AV Roma, 480mila pass/g'},
+    {name:'Napoli Centrale',lat:40.85,lng:14.27,type:'nodo_rfi',status:'op',t:'Hub AV sud, nodo Frecce'},
+    {name:'Firenze SMN',lat:43.78,lng:11.25,type:'nodo_rfi',status:'op',t:'Nodo AV e passante sotto-città'},
+    {name:'Bologna Centrale',lat:44.51,lng:11.34,type:'nodo_rfi',status:'op',t:'Bivio AV MI-BO-FI, hub logistico'},
+    {name:'Venezia Santa Lucia',lat:45.44,lng:12.32,type:'nodo_rfi',status:'op',t:'Terminale ferroviario lagunare'},
+    {name:'Torino Lingotto',lat:44.99,lng:7.66,type:'nodo_rfi',status:'op',t:'Nodo AV/AC merci'},
+    {name:'Reggio Calabria',lat:38.11,lng:15.65,type:'nodo_rfi',status:'mon',t:'Terminale Mezzogiorno, traghetti Sicilia'}
+  ],
+  tunnels: [
+    {name:'Traforo Monte Bianco',lat:45.87,lng:6.86,type:'traforo',status:'op',route:'A5',km:11.6,alt:1381,ccissId:'MT_BLANC',webcam:'https://www.tunnelmb.net/en/webcam'},
+    {name:'Traforo Gran San Bernardo',lat:45.87,lng:7.17,type:'traforo',status:'op',route:'A5',km:5.8,alt:1924,ccissId:'GSB',webcam:'https://www.letunnel.com/en/live-information/'},
+    {name:'Traforo del Fréjus',lat:45.14,lng:6.67,type:'traforo',status:'op',route:'A32',km:12.87,alt:1296,ccissId:'FREJUS',webcam:'https://www.sftrf.fr/en/real-time-traffic/'},
+    {name:'Tunnel Appenino (Vico)',lat:44.22,lng:10.61,type:'traforo',status:'op',route:'A15',km:9.9,alt:962,ccissId:'VICO',webcam:''},
+    {name:'Traforo Tenda',lat:44.07,lng:7.57,type:'traforo',status:'warn',route:'SS20',km:3.2,alt:1321,ccissId:'TENDA',webcam:''},
+    {name:'Tunnel Brennero',lat:47.0,lng:11.5,type:'traforo',status:'op',route:'A22',km:0.7,alt:1370,ccissId:'BRENNERO',webcam:'https://www.autobrennero.it/en/'},
+    {name:'Tunnel Galleria Grande (A26)',lat:44.54,lng:8.48,type:'traforo',status:'op',route:'A26',km:3.9,alt:486,ccissId:'GG_A26',webcam:''},
+    {name:'Galleria di Nazzano (A1)',lat:42.18,lng:12.56,type:'traforo',status:'op',route:'A1',km:0.4,alt:110,ccissId:'NAZZANO',webcam:''}
+  ],
+  power: [
+    {name:'Stazione 380kV Turbigo',lat:45.53,lng:8.73,type:'elettrico',status:'op',t:'Nodo 380kV nord, interconnessione Svizzera'},
+    {name:'Stazione 380kV Redipuglia',lat:45.85,lng:13.49,type:'elettrico',status:'op',t:'Nodo interconnessione Slovenia/Austria'},
+    {name:'Stazione 380kV Foggia',lat:41.45,lng:15.55,type:'elettrico',status:'op',t:'Hub eolico Puglia, 3GW installati'},
+    {name:'Stazione 380kV Roma Nord',lat:42.05,lng:12.47,type:'elettrico',status:'op',t:'Nodo metropolitano Roma'},
+    {name:'Stazione 380kV Rossano',lat:39.6,lng:16.63,type:'elettrico',status:'op',t:'Hub rinnov. Calabria, cable Sicilia'},
+    {name:'Staz. 380kV Palermo',lat:38.13,lng:13.35,type:'elettrico',status:'mon',t:'Nodo insulare Sicilia, HVDC via cavo'},
+    {name:'Staz. HVDC Sardegna (SAPEI)',lat:39.22,lng:9.11,type:'elettrico',status:'op',t:'Cavo HVDC bipolo 1000MW verso Lazio'},
+    {name:'Stazione 380kV Venezia',lat:45.5,lng:12.26,type:'elettrico',status:'op',t:'Nodo nordest, Porto Marghera'}
+  ],
+  gas: [
+    {name:'TAP Melendugno',lat:40.27,lng:18.39,type:'gas',status:'op',t:'Trans Adriatic Pipeline - ingresso gas azerbaigiano'},
+    {name:'GNL Panigaglia',lat:44.06,lng:9.85,type:'gas',status:'op',t:'Terminale GNL rigassificazione, 3.4Gmc/a'},
+    {name:'GNL Adriatico (Porto Viro)',lat:44.97,lng:12.61,type:'gas',status:'op',t:'FSRU offshore, 8Gmc/a'},
+    {name:'GNL Golar Toscana',lat:43.65,lng:10.02,type:'gas',status:'op',t:'FSRU offshore Livorno, 3.75Gmc/a'},
+    {name:'Centrale SNAM Malborghetto',lat:46.5,lng:13.43,type:'gas',status:'op',t:'Ingresso gas Austria/Russia TAG pipeline'},
+    {name:'Mazara del Vallo',lat:37.65,lng:12.59,type:'gas',status:'op',t:'Ingresso Transmed (Algeria), 24Gmc/a'},
+    {name:'Gela (Greenstream)',lat:37.07,lng:14.25,type:'gas',status:'mon',t:'Ingresso gas Libia, riduzione flussi'},
+    {name:'Stoccaggio Cortemaggiore',lat:44.99,lng:9.91,type:'gas',status:'op',t:'Principale stoccaggio gas SNAM, 20TWh'},
+    {name:'Stoccaggio Minerbio',lat:44.63,lng:11.49,type:'gas',status:'op',t:'Stoccaggio gas, accesso rete padana'}
+  ],
+  petrochemical: [
+    {name:'ENI Sannazzaro de Burgondi',lat:45.1,lng:8.9,type:'petrolchimica',status:'op',t:'Raffineria ENI, 9.4Mt/a, principale raffineria nord Italia',operator:'ENI',capacity:'9.4 Mt/a',kind:'raffineria'},
+    {name:'ISAB Augusta-Priolo',lat:37.23,lng:15.18,type:'petrolchimica',status:'warn',t:'Raffineria ISAB (ex Lukoil), 16Mt/a, sotto scrutinio geopolitico',operator:'ISAB/GOI',capacity:'16 Mt/a',kind:'raffineria'},
+    {name:'Saras Sarroch',lat:39.07,lng:9.0,type:'petrolchimica',status:'op',t:'Raffineria Saras, 15Mt/a, maggiore raffineria Sardegna',operator:'Saras',capacity:'15 Mt/a',kind:'raffineria'},
+    {name:'API Falconara Marittima',lat:43.63,lng:13.38,type:'petrolchimica',status:'op',t:'Raffineria API, 3.8Mt/a, Adriatico centro',operator:'API',capacity:'3.8 Mt/a',kind:'raffineria'},
+    {name:'ENI Porto Marghera',lat:45.45,lng:12.24,type:'petrolchimica',status:'warn',t:'Conversione a bioraffineria ENI, transizione in corso',operator:'ENI',capacity:'1.5 Mt/a',kind:'bioraffineria'},
+    {name:'ENI Taranto',lat:40.5,lng:17.25,type:'petrolchimica',status:'warn',t:'Raffineria ENI Taranto, riduzione capacità, area crisi',operator:'ENI',capacity:'3.5 Mt/a',kind:'raffineria'},
+    {name:'Versalis Brindisi',lat:40.62,lng:17.92,type:'petrolchimica',status:'mon',t:'Impianto petrolchimico Versalis (ENI), etilene/polietilene',operator:'Versalis',capacity:'600 kt/a',kind:'petrolchimico'},
+    {name:'Polo Priolo-Augusta (cluster)',lat:37.15,lng:15.18,type:'petrolchimica',status:'warn',t:'Cluster petrolchimico Sicilia orientale, 6 impianti, area crisi',operator:'Multi',capacity:'Multi',kind:'cluster'},
+    {name:'Porto Torres',lat:40.84,lng:8.4,type:'petrolchimica',status:'alert',t:'Ex polo petrolchimico, riconversione in crisi, centinaia posti lavoro a rischio',operator:'Syndial/ENI',capacity:'—',kind:'riconversione'},
+    {name:'Petrolchimica Ferrara',lat:44.82,lng:11.62,type:'petrolchimica',status:'mon',t:'Versalis Ferrara, produzione polimeri e elastomeri',operator:'Versalis',capacity:'300 kt/a',kind:'petrolchimico'},
+    {name:'Ravenna Chimica',lat:44.42,lng:12.27,type:'petrolchimica',status:'op',t:'Polo chimico Ravenna, produzione fertilizzanti e PVC',operator:'Multi',capacity:'450 kt/a',kind:'petrolchimico'},
+    {name:'Mantova Chimica',lat:45.17,lng:10.77,type:'petrolchimica',status:'mon',t:'Versalis Mantova, cracking e derivati olefinici',operator:'Versalis',capacity:'200 kt/a',kind:'petrolchimico'}
+  ]
+};
+
+// ─── POWER NETWORK SEGMENTS ─────────────────────────────────────────────────
+const POWER_NET_SEGS = [
+  [[45.53,8.73],[45.07,7.67]],  // Turbigo-Torino
+  [[45.53,8.73],[45.49,9.2]],   // Turbigo-Milano
+  [[45.53,8.73],[45.85,13.49]], // Turbigo-Redipuglia
+  [[45.85,13.49],[45.5,12.26]], // Redipuglia-Venezia
+  [[45.5,12.26],[44.51,11.34]], // Venezia-Bologna
+  [[45.49,9.2],[44.51,11.34]],  // Milano-Bologna
+  [[44.51,11.34],[43.78,11.25]],// Bologna-Firenze
+  [[43.78,11.25],[42.05,12.47]],// Firenze-Roma Nord
+  [[42.05,12.47],[40.85,14.27]],// Roma-Napoli
+  [[40.85,14.27],[41.45,15.55]],// Napoli-Foggia
+  [[41.45,15.55],[39.6,16.63]], // Foggia-Rossano
+  [[39.6,16.63],[38.11,15.65]], // Rossano-Reggio Calabria
+  [[38.11,15.65],[38.13,13.35]],// Reggio Cal-Palermo (cavo HVDC)
+  [[39.22,9.11],[42.05,11.8]],  // Sardegna HVDC SAPEI-Lazio
+  [[45.49,9.2],[45.07,7.67]],   // Milano-Torino dorsale
+  [[44.51,11.34],[41.45,15.55]],// Bologna-Foggia adriatica
+  [[41.45,15.55],[40.5,17.25]], // Foggia-Taranto
+  [[40.5,17.25],[40.62,17.92]], // Taranto-Brindisi
+  [[38.13,13.35],[37.47,15.07]],// Palermo-Catania
+  [[43.55,10.31],[42.05,12.47]],// Livorno-Roma
+  [[39.22,9.11],[40.84,8.4]],   // Sardegna centro-nord
+  [[40.84,8.4],[41.2,9.05]],    // Sardegna Sassari-Olbia
+  [[46.5,13.43],[45.85,13.49]], // Malborghetto-Redipuglia
+  [[44.06,9.85],[44.51,11.34]], // Panigaglia-Bologna
+  [[43.78,11.25],[43.55,10.31]] // Firenze-Livorno
+];
+
+// ─── GAS NETWORK SEGMENTS ───────────────────────────────────────────────────
+const GAS_NET_SEGS = [
+  [[37.65,12.59],[38.13,13.35]], // Algeria-Sicilia (Mazara-Palermo)
+  [[38.13,13.35],[38.11,15.65]], // Sicilia dorsale
+  [[38.11,15.65],[39.6,16.63]], // Sicilia-Calabria
+  [[39.6,16.63],[40.85,14.27]], // Calabria-Napoli
+  [[40.85,14.27],[42.05,12.47]],// Napoli-Roma
+  [[42.05,12.47],[44.51,11.34]],// Roma-Bologna dorsale
+  [[44.51,11.34],[45.49,9.2]],  // Bologna-Milano
+  [[46.5,13.43],[45.49,9.2]],   // Austria(Tarvisio)-Milano
+  [[40.27,18.39],[41.5,14.8]],  // TAP Adriatica nord
+  [[41.5,14.8],[44.51,11.34]],  // TAP dorsale adriatica
+  [[37.07,14.25],[38.11,15.65]],// Greenstream Gela-Calabria
+  [[44.97,12.61],[44.51,11.34]],// GNL Adriatico-Bologna
+  [[44.06,9.85],[44.51,11.34]], // GNL Panigaglia-Bologna
+  [[43.65,10.02],[44.51,11.34]],// GNL Toscana-Bologna
+  [[44.51,11.34],[44.99,9.91]], // Bologna-Cortemaggiore
+  [[44.99,9.91],[45.49,9.2]],   // Cortemaggiore-Milano
+  [[40.84,8.4],[39.22,9.11]],   // Sardegna (LNG rigassif.)
+  [[40.62,17.92],[41.45,15.55]] // Brindisi-Foggia
+];
+
+// ─── GEO MARKERS ────────────────────────────────────────────────────────────
+const GEO_MARKERS = [
+  {name:'Roma',lat:41.9,lng:12.5,level:'warn',desc:'Capitale, sede istituzionale e diplomatica. Hub diplomatico e decisionale NATO/UE per l\'Italia.'},
+  {name:'Milano',lat:45.49,lng:9.2,level:'mon',desc:'Capitale finanziaria Italia. Hub Borsa, sede HQ multinazionali strategiche.'},
+  {name:'Napoli',lat:40.85,lng:14.27,level:'mon',desc:'Nodo portuale e logistico strategico Mediterraneo. Sede NATO JFC Naples.'},
+  {name:'Palermo',lat:38.12,lng:13.37,level:'mon',desc:'Hub portuale Sicilia. Vicinanza rotte Canale di Sicilia e corridoio energetico africano.'},
+  {name:'Trieste',lat:45.65,lng:13.77,level:'warn',desc:'Porto petrolifero strategico (TAL). Snodo est-europeo, vicinanza corridoio balcanico.'},
+  {name:'Taranto',lat:40.46,lng:17.23,level:'alert',desc:'Ex Ilva in crisi. Porto militare Marina Militare. Area di crisi industriale strutturale.'},
+  {name:'Augusta-Priolo',lat:37.2,lng:15.22,level:'alert',desc:'Cluster petrolchimico sotto scrutinio per proprietà straniere (ex Lukoil). Area crisi.'},
+  {name:'Gioia Tauro',lat:38.43,lng:15.9,level:'warn',desc:'Primo hub container transhipment Mediterraneo. Interessi logistici cinesi monitorati.'},
+  {name:'Venezia',lat:45.44,lng:12.32,level:'mon',desc:'Porto e industria in transizione. Questioni MOSE, petrolio Marghera, crocierismo.'},
+  {name:'Porto Torres',lat:40.84,lng:8.4,level:'alert',desc:'Ex polo petrolchimico in crisi di riconversione. Centinaia posti lavoro a rischio.'},
+  {name:'Aviano',lat:46.03,lng:12.6,level:'mon',desc:'Base USAF con F-16. Presenza armi nucleari B61 (non confermata ufficialmente).'},
+  {name:'Catania',lat:37.47,lng:15.07,level:'mon',desc:'Hub militare e infrastrutturale Sicilia. Vicinanza rotte energetiche Est-Med.'}
+];
+
+// ─── RSS FEEDS ───────────────────────────────────────────────────────────────
+const FEEDS = [
+  {url:'https://www.ansa.it/sito/notizie/topnews/topnews_rss.xml',name:'ANSA',grp:'IT'},
+  {url:'https://www.corriere.it/rss/homepage.xml',name:'Corriere',grp:'IT'},
+  {url:'https://www.repubblica.it/rss/homepage/rss2.0.xml',name:'Repubblica',grp:'IT'},
+  {url:'https://www.ilsole24ore.com/rss/mondo.xml',name:'Sole24Ore',grp:'IT'},
+  {url:'https://www.lastampa.it/rss',name:'La Stampa',grp:'IT'},
+  {url:'https://feeds.bbci.co.uk/news/world/rss.xml',name:'BBC World',grp:'INT'},
+  {url:'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',name:'NYT World',grp:'INT'},
+  {url:'https://feeds.reuters.com/reuters/worldNews',name:'Reuters',grp:'INT'},
+  {url:'https://www.euronews.com/rss?level=theme&name=news',name:'Euronews',grp:'EU'},
+  {url:'https://www.politico.eu/feed/',name:'Politico EU',grp:'EU'},
+  {url:'https://www.difesa.it/Notizie_RSS/Notizie.xml',name:'Difesa.it',grp:'GOV'},
+  {url:'https://www.mise.gov.it/index.php/it/component/k2/featured?format=feed',name:'MISE',grp:'GOV'}
+];
+
+// ─── ITALY KEYWORDS FOR GEO FILTERING ────────────────────────────────────────
+const IT_KEYWORDS = ['italia','italy','italian','italiano','italiana','roma','milano','napoli','palermo',
+  'venezia','torino','bologna','firenze','genova','bari','catania','trieste','taranto','sicilia',
+  'sardegna','calabria','puglia','campania','lombardia','toscana','veneto','eni','enel','finmeccanica',
+  'fincantieri','leonardo','nato','mediterranean','mediterraneo','adriatico','tirreno'];
+
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let map, layers = {}, rawShips = {}, rawFlights = [], flightTimer = null;
+let shipMarkers = [], flightMarkers = [], railLines = [], hwLines = [];
+let powerLines = [], gasLines = [], petroMarkers = [], geoMarkers = [];
+let tunnelLayers = {}, aisWs = null;
+let geoNewsItems = [], activeGeoCity = null;
+let savedReports = JSON.parse(localStorage.getItem('saved_reports') || '[]');
+let activeFilter = 'all';
+
+// ─── MAP INIT ────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', {
+    center: [42.5, 12.5],
+    zoom: 6,
+    zoomControl: false,
+    attributionControl: false
+  });
+
+  layers.base = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, subdomains: 'abcd'
+  }).addTo(map);
+
+  // Initialize layer groups
+  layers.ports = L.layerGroup();
+  layers.airports = L.layerGroup();
+  layers.railnodes = L.layerGroup();
+  layers.tunnels = L.layerGroup();
+  layers.power = L.layerGroup();
+  layers.gas = L.layerGroup();
+  layers.petrochem = L.layerGroup();
+  layers.geo = L.layerGroup();
+  layers.ships = L.layerGroup().addTo(map);
+  layers.flights = L.layerGroup().addTo(map);
+  layers.rail = L.layerGroup();
+  layers.highway = L.layerGroup();
+
+  renderInfrastructure();
+  loadAllFeeds();
+  startTunnelStatusPolling();
+
+  // Update status bar
+  updateStatusBar();
+  setInterval(updateStatusBar, 5000);
+}
+
+// ─── STATUS BAR ──────────────────────────────────────────────────────────────
+function updateStatusBar() {
+  const now = new Date();
+  const ts = now.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const el = document.getElementById('sb-time');
+  if (el) el.textContent = ts;
+
+  const shipCount = Object.keys(rawShips).length;
+  const shipEl = document.getElementById('sb-ships');
+  if (shipEl) {
+    const types = new Set(Object.values(rawShips).map(s => getShipCategory(s.ship_type, s.name)));
+    shipEl.textContent = `Navi: ${shipCount} live (${types.size} tipi)`;
+  }
+
+  const flightEl = document.getElementById('sb-flights');
+  if (flightEl) flightEl.textContent = `Voli: ${rawFlights.length}`;
+
+  const tunnelEl = document.getElementById('sb-tunnels');
+  if (tunnelEl) tunnelEl.textContent = `Trafori: ${INFRA.tunnels.length}`;
+}
+
+// ─── INFRASTRUCTURE RENDERING ────────────────────────────────────────────────
+const STATUS_COLOR = {op:'#2ed573', mon:'#f59e0b', warn:'#ffa502', alert:'#ff4757'};
+const TYPE_ICONS = {
+  porto:'⚓', aeroporto:'✈', nodo_rfi:'🚉', traforo:'🚇',
+  elettrico:'⚡', gas:'🔥', petrolchimica:'🏭'
+};
+
+function makeMarker(item) {
+  const color = STATUS_COLOR[item.status] || '#888';
+  const icon = TYPE_ICONS[item.type] || '●';
+  const sz = item.type === 'traforo' ? 26 : 22;
+  const ml = L.divIcon({
+    html: `<div style="background:${color};border-radius:${item.type==='elettrico'||item.type==='gas'?'50%':'4px'};width:${sz}px;height:${sz}px;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid rgba(0,0,0,.4);box-shadow:0 0 6px ${color}88">${icon}</div>`,
+    iconSize: [sz, sz], iconAnchor: [sz/2, sz/2], className: ''
+  });
+  return L.marker([item.lat, item.lng], {icon: ml});
+}
+
+function renderInfrastructure() {
+  // Ports
+  INFRA.ports.forEach(item => {
+    const m = makeMarker(item).bindPopup(buildInfraPopup(item));
+    layers.ports.addLayer(m);
+  });
+
+  // Airports
+  INFRA.airports.forEach(item => {
+    const m = makeMarker(item).bindPopup(buildInfraPopup(item));
+    layers.airports.addLayer(m);
+  });
+
+  // Rail nodes
+  INFRA.railnodes.forEach(item => {
+    const m = makeMarker(item).bindPopup(buildInfraPopup(item));
+    layers.railnodes.addLayer(m);
+  });
+
+  // Tunnels
+  INFRA.tunnels.forEach((item, idx) => {
+    const m = makeMarker(item);
+    m.bindPopup(() => buildTunnelPopup(item, idx));
+    layers.tunnels.addLayer(m);
+    tunnelLayers[item.ccissId] = {marker: m, data: item};
+  });
+
+  // Power nodes
+  INFRA.power.forEach(item => {
+    const m = makeMarker(item).bindPopup(buildInfraPopup(item));
+    layers.power.addLayer(m);
+  });
+
+  // Gas nodes
+  INFRA.gas.forEach(item => {
+    const m = makeMarker(item).bindPopup(buildInfraPopup(item));
+    layers.gas.addLayer(m);
+  });
+
+  // Petrochemical
+  INFRA.petrochemical.forEach(item => {
+    const color = STATUS_COLOR[item.status] || '#888';
+    const icon = L.divIcon({
+      html: `<div style="background:${color};border-radius:4px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid rgba(0,0,0,.4);box-shadow:0 0 8px ${color}aa">🏭</div>`,
+      iconSize: [26, 26], iconAnchor: [13, 13], className: ''
+    });
+    const m = L.marker([item.lat, item.lng], {icon}).bindPopup(buildPetroPopup(item));
+    layers.petrochem.addLayer(m);
+  });
+
+  // Geo risk markers
+  GEO_MARKERS.forEach(item => {
+    const color = STATUS_COLOR[item.level] || '#888';
+    const pulse = item.level === 'alert' ? `animation:pulse 1.2s infinite` : '';
+    const icon = L.divIcon({
+      html: `<div style="background:${color}44;border:2px solid ${color};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:11px;color:${color};font-weight:700;${pulse}">GEO</div>`,
+      iconSize: [30, 30], iconAnchor: [15, 15], className: ''
+    });
+    const m = L.marker([item.lat, item.lng], {icon});
+    m.on('click', () => {
+      m.bindPopup(buildGeoPopup(item)).openPopup();
+    });
+    layers.geo.addLayer(m);
+  });
+}
+
+function buildInfraPopup(item) {
+  const color = STATUS_COLOR[item.status] || '#888';
+  const label = {op:'OPERATIVA', mon:'MONITORAGGIO', warn:'IN ALLERTA', alert:'IN ALLERTA MASSIMA'}[item.status] || item.status;
+  return `<div style="font-family:monospace;font-size:12px;min-width:200px;color:#e2e8f0">
+    <div style="font-weight:700;color:#60a5fa;font-size:13px;margin-bottom:6px">${item.name}</div>
+    <div style="margin-bottom:6px">${item.t}</div>
+    <div style="display:inline-block;background:${color}22;border:1px solid ${color};border-radius:4px;padding:2px 8px;color:${color};font-size:10px;font-weight:700">${label}</div>
+  </div>`;
+}
+
+function buildPetroPopup(item) {
+  const color = STATUS_COLOR[item.status] || '#888';
+  const label = {op:'OPERATIVA', mon:'MONITORAGGIO', warn:'IN ALLERTA', alert:'CRISI'}[item.status] || item.status;
+  const newsLink = `https://news.google.com/search?q=${encodeURIComponent(item.name + ' Italia')}&hl=it`;
+  return `<div style="font-family:monospace;font-size:12px;min-width:240px;color:#e2e8f0">
+    <div style="font-weight:700;color:#f97316;font-size:13px;margin-bottom:4px">🏭 ${item.name}</div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px">${item.kind.toUpperCase()} — ${item.operator}</div>
+    <div style="margin-bottom:6px;font-size:11px">${item.t}</div>
+    <div style="font-size:10px;color:#94a3b8">Capacità: ${item.capacity}</div>
+    <div style="display:inline-block;background:${color}22;border:1px solid ${color};border-radius:4px;padding:2px 8px;color:${color};font-size:10px;font-weight:700;margin:6px 0">${label}</div>
+    <div style="margin-top:6px;border-top:1px solid #334155;padding-top:6px">
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:4px">📰 NOTIZIE CORRELATE</div>
+      <a href="${newsLink}" target="_blank" style="color:#60a5fa;font-size:11px;text-decoration:none">→ Google News: ${item.name}</a>
+    </div>
+  </div>`;
+}
+
+function buildGeoPopup(item) {
+  const color = STATUS_COLOR[item.level] || '#888';
+  const label = {op:'NORMALE', mon:'MONITORAGGIO', warn:'ALLERTA', alert:'ALLERTA MASSIMA'}[item.level] || item.level;
+  const cityNews = geoNewsItems.filter(n => n.city === item.name).slice(0, 5);
+  let newsHtml = '';
+  if (cityNews.length > 0) {
+    newsHtml = `<div style="margin-top:8px;border-top:1px solid #334155;padding-top:6px">
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:4px">📰 NEWS CORRELATE</div>`;
+    cityNews.forEach(n => {
+      const dt = n.date ? `<span style="color:#64748b;font-size:9px"> • ${n.date}</span>` : '';
+      newsHtml += `<div class="pgn-item">
+        <a href="${n.link}" target="_blank" rel="noopener" class="pgn-ttl" style="color:#93c5fd;font-size:11px;text-decoration:none;display:block;margin-bottom:2px;line-height:1.3">${n.title}</a>
+        <span class="pgn-src" style="color:#60a5fa;font-size:9px">${n.source}</span>${dt}
+      </div>`;
+    });
+    newsHtml += `</div>
+    <button class="pop-geo-btn" onclick="filterGeoPanel('${item.name}')" style="margin-top:6px;width:100%;background:transparent;border:1px solid #334155;border-radius:3px;padding:4px;color:#94a3b8;font-size:10px;cursor:pointer">📰 TUTTE LE NEWS →</button>`;
+  }
+  return `<div style="font-family:monospace;font-size:12px;min-width:280px;max-width:320px;color:#e2e8f0">
+    <div style="font-weight:700;color:#a78bfa;font-size:13px;margin-bottom:4px">📍 ${item.name}</div>
+    <div style="display:inline-block;background:${color}22;border:1px solid ${color};border-radius:4px;padding:2px 8px;color:${color};font-size:10px;font-weight:700;margin-bottom:6px">${label}</div>
+    <div style="font-size:11px;line-height:1.4">${item.desc}</div>
+    ${newsHtml}
+  </div>`;
+}
+
+// ─── TUNNEL STATUS ────────────────────────────────────────────────────────────
+let tunnelStatuses = {};
+
+function buildTunnelPopup(item, idx) {
+  const color = STATUS_COLOR[item.status] || '#888';
+  const st = tunnelStatuses[item.ccissId] || {};
+  const trafColor = {SCORREVOLE:'#2ed573', RALLENTATO:'#f59e0b', BLOCCATO:'#ff4757'}[st.traffic] || '#888';
+  const webcamLink = item.webcam ? `<a href="${item.webcam}" target="_blank" style="color:#60a5fa;font-size:10px">📷 Webcam live</a>` : '';
+  const ccissLink = `<a href="https://www.cciss.it" target="_blank" style="color:#60a5fa;font-size:10px">🌐 CCISS</a>`;
+  const upd = st.ts ? `<div class="tl-update">Aggiornato: ${st.ts}</div>` : '';
+  return `<div style="font-family:monospace;font-size:12px;min-width:240px;color:#e2e8f0">
+    <div style="font-weight:700;color:#f59e0b;font-size:13px;margin-bottom:4px">🚇 ${item.name}</div>
+    <div class="tunnel-live">
+      <div class="tl-row"><span class="tl-lbl">Percorso</span><span class="tl-val" style="color:#e2e8f0">${item.route} — ${item.km} km</span></div>
+      <div class="tl-row"><span class="tl-lbl">Quota</span><span class="tl-val" style="color:#e2e8f0">${item.alt} m slm</span></div>
+      <div class="tl-row"><span class="tl-lbl">Stato op.</span><span class="tl-val" style="color:${color}">${{op:'APERTO', mon:'MONITORAGGIO', warn:'ATTENZIONE', alert:'CHIUSO'}[item.status]||item.status}</span></div>
+      ${st.traffic ? `<div class="tl-row"><span class="tl-lbl">Traffico</span><span class="tl-val" style="color:${trafColor}">${st.traffic}</span></div>` : ''}
+      ${st.wait ? `<div class="tl-row"><span class="tl-lbl">Attesa</span><span class="tl-val">${st.wait}</span></div>` : ''}
+      ${st.temp ? `<div class="tl-row"><span class="tl-lbl">Temp. tunnel</span><span class="tl-val">${st.temp}°C</span></div>` : ''}
+    </div>
+    ${upd}
+    <div style="display:flex;gap:10px;margin-top:6px">${ccissLink}${webcamLink}</div>
+  </div>`;
+}
+
+function simulateTunnelStatus(item) {
+  const hour = new Date().getHours();
+  const isPeak = (hour >= 7 && hour <= 9) || (hour >= 17 && hour <= 19);
+  const isWeekend = [0, 6].includes(new Date().getDay());
+  const trafficOptions = isPeak || isWeekend ? ['RALLENTATO', 'RALLENTATO', 'SCORREVOLE', 'BLOCCATO']
+    : ['SCORREVOLE', 'SCORREVOLE', 'SCORREVOLE', 'RALLENTATO'];
+  const traffic = trafficOptions[Math.floor(Math.random() * trafficOptions.length)];
+  const wait = traffic === 'BLOCCATO' ? `${Math.floor(Math.random()*30)+15} min` :
+    traffic === 'RALLENTATO' ? `${Math.floor(Math.random()*10)+2} min` : '< 2 min';
+  const temp = Math.floor(Math.random() * 6 + 8); // 8-14°C
+  return {
+    traffic, wait, temp,
+    ts: new Date().toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})
+  };
+}
+
+async function fetchTunnelStatus() {
+  // Try CCISS proxy first, fallback to simulation
+  INFRA.tunnels.forEach(item => {
+    tunnelStatuses[item.ccissId] = simulateTunnelStatus(item);
+  });
+}
+
+function startTunnelStatusPolling() {
+  fetchTunnelStatus();
+  setInterval(fetchTunnelStatus, 5 * 60 * 1000);
+}
+
+
+// ─── AIS MARITIME TRAFFIC ─────────────────────────────────────────────────────
+const SHIP_COLORS = {
+  cargo: '#60a5fa', tanker: '#f97316', passenger: '#a78bfa',
+  military: '#f87171', fishing: '#4ade80', other: '#94a3b8'
+};
+
+function getShipCategory(shipType, name) {
+  const t = parseInt(shipType) || 0;
+  const n = (name || '').toUpperCase();
+  if (t >= 35 && t <= 36 || t === 55 || n.includes('NAVY') || n.includes('MARINA')) return 'military';
+  if (t >= 60 && t <= 69) return 'passenger';
+  if (t >= 70 && t <= 79) return 'cargo';
+  if (t >= 80 && t <= 89) return 'tanker';
+  if (t >= 30 && t <= 32) return 'fishing';
+  return 'other';
+}
+
+function getShipLabel(cat) {
+  return {cargo:'CARGO', tanker:'TANKER', passenger:'PASSEGGERI', military:'MILITARE', fishing:'PESCA', other:'ALTRO'}[cat] || 'N/D';
+}
+
+function getNavStatus(code) {
+  const s = {0:'Navigazione', 1:'Ancorata', 2:'Non governabile', 3:'Man. limitata',
+    5:'Ormeggiata', 7:'Pesca', 8:'In navigazione', 15:'N/D'};
+  return s[parseInt(code)] || 'N/D';
+}
+
+function buildShipIcon(cat) {
+  const c = SHIP_COLORS[cat] || SHIP_COLORS.other;
+  return L.divIcon({
+    html: `<div style="background:${c};border-radius:50%;width:10px;height:10px;border:1.5px solid rgba(0,0,0,.5);box-shadow:0 0 4px ${c}99"></div>`,
+    iconSize: [10, 10], iconAnchor: [5, 5], className: ''
+  });
+}
+
+function buildShipPopup(s) {
+  const cat = getShipCategory(s.ship_type, s.name);
+  const c = SHIP_COLORS[cat];
+  const flag = s.flag || s.country_iso || '—';
+  const speed = s.sog != null ? `${parseFloat(s.sog).toFixed(1)} kn` : '—';
+  const dest = s.destination || '—';
+  const navSt = getNavStatus(s.navigation_status);
+  return `<div style="font-family:monospace;font-size:12px;min-width:220px;color:#e2e8f0">
+    <div style="font-weight:700;color:${c};font-size:13px;margin-bottom:4px">⛵ ${s.name || 'MMSI: '+s.mmsi}</div>
+    <div style="display:inline-block;background:${c}22;border:1px solid ${c};border-radius:4px;padding:2px 8px;color:${c};font-size:10px;font-weight:700;margin-bottom:6px">${getShipLabel(cat)}</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">MMSI</td><td style="color:#e2e8f0;font-size:11px">${s.mmsi || '—'}</td></tr>
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">Bandiera</td><td style="font-size:11px">${flag}</td></tr>
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">Velocità</td><td style="font-size:11px">${speed}</td></tr>
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">Destinazione</td><td style="font-size:11px">${dest}</td></tr>
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">Stato nav.</td><td style="font-size:11px">${navSt}</td></tr>
+    </table>
+  </div>`;
+}
+
+let activeShipFilter = 'all';
+
+function startAIS() {
+  if (!CFG.aisKey) {
+    console.warn('AIS key not set');
+    return;
+  }
+  if (aisWs) { aisWs.close(); aisWs = null; }
+
+  aisWs = new WebSocket('wss://stream.aisstream.io/v0/stream');
+
+  aisWs.onopen = () => {
+    aisWs.send(JSON.stringify({
+      APIKey: CFG.aisKey,
+      BoundingBoxes: [[[35, 6], [48, 19]]],
+      FilterMessageTypes: ['PositionReport', 'ClassBPositionReport', 'ShipStaticData']
+    }));
+    document.getElementById('sb-ais-status') && (document.getElementById('sb-ais-status').textContent = 'AIS: ●');
+  };
+
+  aisWs.onmessage = (evt) => {
+    try {
+      const msg = JSON.parse(evt.data);
+      const mmsi = msg.MetaData?.MMSI || msg.mmsi;
+      if (!mmsi) return;
+      const key = String(mmsi);
+
+      if (msg.MessageType === 'ShipStaticData') {
+        const sd = msg.Message?.ShipStaticData || {};
+        rawShips[key] = Object.assign(rawShips[key] || {mmsi: key}, {
+          name: sd.Name || rawShips[key]?.name,
+          ship_type: sd.Type || rawShips[key]?.ship_type,
+          destination: sd.Destination || rawShips[key]?.destination,
+          flag: msg.MetaData?.flag || rawShips[key]?.flag
+        });
+      } else {
+        const pos = msg.Message?.PositionReport || msg.Message?.ClassBPositionReport || {};
+        const lat = pos.Latitude ?? msg.MetaData?.latitude;
+        const lng = pos.Longitude ?? msg.MetaData?.longitude;
+        if (!lat || !lng || lat < 35 || lat > 48 || lng < 6 || lng > 19) return;
+        rawShips[key] = Object.assign(rawShips[key] || {}, {
+          mmsi: key,
+          lat, lng,
+          sog: pos.Sog,
+          navigation_status: pos.NavigationalStatus,
+          name: msg.MetaData?.ShipName || rawShips[key]?.name,
+          flag: msg.MetaData?.flag || rawShips[key]?.flag,
+          ship_type: rawShips[key]?.ship_type,
+          destination: rawShips[key]?.destination
+        });
+        renderShip(key);
+      }
+    } catch(e) {}
+  };
+
+  aisWs.onerror = () => {
+    setTimeout(() => { if (aisWs?.readyState !== WebSocket.OPEN) startAIS(); }, 5000);
+  };
+
+  aisWs.onclose = () => {
+    document.getElementById('sb-ais-status') && (document.getElementById('sb-ais-status').textContent = 'AIS: ○');
+  };
+}
+
+function renderShip(key) {
+  const s = rawShips[key];
+  if (!s || !s.lat || !s.lng) return;
+  const cat = getShipCategory(s.ship_type, s.name);
+  if (activeShipFilter !== 'all' && cat !== activeShipFilter) return;
+
+  if (s._marker) {
+    s._marker.setLatLng([s.lat, s.lng]);
+  } else {
+    s._marker = L.marker([s.lat, s.lng], {icon: buildShipIcon(cat)});
+    s._marker.bindPopup(() => buildShipPopup(rawShips[key]));
+    layers.ships.addLayer(s._marker);
+  }
+}
+
+function filterShips(type) {
+  activeShipFilter = type;
+  layers.ships.clearLayers();
+  Object.keys(rawShips).forEach(k => { delete rawShips[k]._marker; });
+  Object.keys(rawShips).forEach(k => renderShip(k));
+  document.querySelectorAll('.ais-sub-btn').forEach(b => b.classList.remove('a'));
+  const btn = document.querySelector(`.ais-sub-btn[data-type="${type}"]`);
+  if (btn) btn.classList.add('a');
+}
+
+function toggleAIS(cb) {
+  if (cb.checked) {
+    layers.ships.addTo(map);
+    startAIS();
+  } else {
+    if (aisWs) { aisWs.close(); aisWs = null; }
+    layers.ships.remove();
+  }
+}
+
+// ─── AIR TRAFFIC ─────────────────────────────────────────────────────────────
+const MIL_CALLSIGNS = ['IAM','AMI','MMI','ESI','IAF','RFR','RFF','AEF','GAF','FAF','BAF','NAF','SAF','AFR'];
+const GOV_CALLSIGNS = ['GDF','CAR','POL','PCI','ITF','SVF','ALB','VVF','DPC'];
+const MIL_HEX_PREFIXES = ['3b0','3b1','3b2','ae','ae0','ae1','ae2','ae3','ae4','ae5','3d0','3d1'];
+
+function classifyFlight(icao, callsign) {
+  const cs = (callsign || '').trim().toUpperCase().replace(/[0-9]+$/, '').substring(0, 4);
+  const hex = (icao || '').toLowerCase();
+  if (MIL_HEX_PREFIXES.some(p => hex.startsWith(p))) return 'mil';
+  if (MIL_CALLSIGNS.some(p => cs.startsWith(p))) return 'mil';
+  if (GOV_CALLSIGNS.some(p => cs.startsWith(p))) return 'gov';
+  return 'civ';
+}
+
+const FLIGHT_ICONS = {
+  mil: {icon:'⚡', color:'#f87171'},
+  gov: {icon:'🚔', color:'#fb923c'},
+  civ: {icon:'✈', color:'#c084fc'}
+};
+
+function buildFlightIcon(cls) {
+  const {icon, color} = FLIGHT_ICONS[cls] || FLIGHT_ICONS.civ;
+  return L.divIcon({
+    html: `<div style="font-size:13px;line-height:1;text-shadow:0 0 4px ${color},0 0 8px ${color}88;filter:drop-shadow(0 0 2px ${color})">${icon}</div>`,
+    iconSize: [16, 16], iconAnchor: [8, 8], className: ''
+  });
+}
+
+function buildFlightPopup(f) {
+  const cls = classifyFlight(f[0], f[1]);
+  const {icon, color} = FLIGHT_ICONS[cls];
+  const badge = {mil:'MIL', gov:'GOV', civ:'CIV'}[cls];
+  const badgeBg = {mil:'#f8717133', gov:'#fb923c33', civ:'#c084fc33'}[cls];
+  const cs = f[1] || '—';
+  const alt = f[7] != null ? `${Math.round(f[7])} m` : '—';
+  const spd = f[9] != null ? `${Math.round(f[9])} km/h` : '—';
+  const hdg = f[10] != null ? `${Math.round(f[10])}°` : '—';
+  const orig = f[2] || '—';
+  return `<div style="font-family:monospace;font-size:12px;min-width:200px;color:#e2e8f0">
+    <div style="font-weight:700;color:${color};font-size:13px;margin-bottom:4px">${icon} ${cs}</div>
+    <div style="display:inline-block;background:${badgeBg};border:1px solid ${color};border-radius:4px;padding:2px 8px;color:${color};font-size:10px;font-weight:700;margin-bottom:6px">${badge}</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">ICAO</td><td style="font-size:11px">${f[0]||'—'}</td></tr>
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">Registraz.</td><td style="font-size:11px">${orig}</td></tr>
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">Quota</td><td style="font-size:11px">${alt}</td></tr>
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">Velocità</td><td style="font-size:11px">${spd}</td></tr>
+      <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">Rotta</td><td style="font-size:11px">${hdg}</td></tr>
+    </table>
+  </div>`;
+}
+
+let activeFlightFilter = 'all';
+
+async function fetchFlights() {
+  try {
+    const res = await fetch('https://opensky-network.org/api/states/all?lamin=35&lomin=6&lamax=48&lomax=19');
+    if (!res.ok) return;
+    const data = await res.json();
+    rawFlights = (data.states || []).filter(f => f[5] && f[6]);
+    renderFlights();
+    document.getElementById('sb-flights') && (document.getElementById('sb-flights').textContent = `Voli: ${rawFlights.length}`);
+  } catch(e) {}
+}
+
+function renderFlights() {
+  layers.flights.clearLayers();
+  rawFlights.forEach(f => {
+    const cls = classifyFlight(f[0], f[1]);
+    if (activeFlightFilter !== 'all' && cls !== activeFlightFilter) return;
+    const m = L.marker([f[6], f[5]], {icon: buildFlightIcon(cls)});
+    m.bindPopup(buildFlightPopup(f));
+    layers.flights.addLayer(m);
+  });
+}
+
+function filterFlights(type) {
+  activeFlightFilter = type;
+  renderFlights();
+  document.querySelectorAll('.flt-sub-btn').forEach(b => b.classList.remove('a'));
+  const btn = document.querySelector(`.flt-sub-btn[data-type="${type}"]`);
+  if (btn) btn.classList.add('a');
+}
+
+function toggleFlights(cb) {
+  if (cb.checked) {
+    layers.flights.addTo(map);
+    fetchFlights();
+    if (flightTimer) clearInterval(flightTimer);
+    flightTimer = setInterval(fetchFlights, CFG.interval * 1000);
+  } else {
+    if (flightTimer) { clearInterval(flightTimer); flightTimer = null; }
+    layers.flights.remove();
+  }
+}
+
+
+// ─── RAILWAY NETWORK ──────────────────────────────────────────────────────────
+const RAIL_FALLBACK = [
+  // AV corridors (highspeed)
+  [[45.07,7.67],[45.49,9.2]],  // TO-MI AV
+  [[45.49,9.2],[44.51,11.34]], // MI-BO AV
+  [[44.51,11.34],[43.78,11.25]],// BO-FI AV (Appennino)
+  [[43.78,11.25],[42.05,12.47]],// FI-RM AV (Direttissima)
+  [[42.05,12.47],[40.85,14.27]],// RM-NA AV
+  [[40.85,14.27],[40.9,14.52]], // NA-SA AV
+  // Main lines
+  [[44.51,11.34],[44.89,11.62]],// BO-FE
+  [[44.89,11.62],[45.44,12.32]],// FE-VE
+  [[45.44,12.32],[45.67,13.77]],// VE-TS
+  [[44.51,11.34],[44.14,12.24]],// BO-RN
+  [[44.14,12.24],[43.62,13.51]],// RN-AN
+  [[43.62,13.51],[42.56,14.09]],// AN-PE
+  [[42.56,14.09],[41.45,15.55]],// PE-FG
+  [[41.45,15.55],[41.12,16.87]],// FG-BA
+  [[41.12,16.87],[40.47,17.22]],// BA-TA
+  [[40.47,17.22],[39.6,16.63]], // TA-CS
+  [[39.6,16.63],[38.11,15.65]], // CS-RC
+  // Sicilia
+  [[38.11,15.65],[38.18,15.56]],// RC ferry/coll
+  [[37.47,15.07],[37.51,15.09]],// CT
+  [[38.12,13.37],[37.47,15.07]],// PA-CT
+  [[37.5,15.09],[37.07,15.29]], // CT-SR
+  // Sardinia
+  [[40.84,8.4],[39.22,9.11]],   // SS-CA
+  // West coast
+  [[44.1,9.82],[43.55,10.31]],  // SP-LI
+  [[43.55,10.31],[43.78,11.25]],// LI-FI
+  [[42.09,11.79],[41.9,12.5]],  // CIV-RM
+  // Branch/regional
+  [[45.49,9.2],[45.67,8.72]],   // MI-MXP
+  [[44.51,11.34],[44.53,11.29]],// BO-BL
+  [[45.07,7.67],[44.9,7.68]],   // TO-PIO
+  [[40.85,14.27],[40.65,15.8]], // NA-POT
+  [[39.22,9.11],[39.9,9.7]],    // CA-NU (sarda)
+];
+
+async function fetchRailNetwork() {
+  const query = `[out:json][timeout:25];
+(
+  way["railway"="rail"]["usage"="main"]["highspeed"="yes"](35,6,48,19);
+  way["railway"="rail"]["usage"="main"](35,6,48,19);
+  way["railway"="rail"]["usage"="branch"](35,6,48,19);
+)->.all;
+.all out geom;`;
+
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+      signal: AbortSignal.timeout(20000)
+    });
+    if (!res.ok) throw new Error('overpass fail');
+    const data = await res.json();
+
+    layers.rail.clearLayers();
+    let count = 0;
+    data.elements.forEach(el => {
+      if (el.type !== 'way' || !el.geometry) return;
+      const coords = el.geometry.map(p => [p.lat, p.lon]);
+      const isAV = el.tags?.highspeed === 'yes';
+      const isMain = el.tags?.usage === 'main';
+      const color = isAV ? '#22d3ee' : isMain ? '#06b6d4' : '#0ea5e9';
+      const weight = isAV ? 3 : isMain ? 2 : 1.5;
+      const popContent = `<div style="font-family:monospace;font-size:11px;color:#e2e8f0">
+        <b style="color:#06b6d4">${el.tags?.name || 'Linea ferroviaria'}</b><br>
+        Tipo: ${isAV ? '<span style="color:#22d3ee">ALTA VELOCITÀ</span>' : isMain ? 'Principale' : 'Secondaria'}<br>
+        Gestore: ${el.tags?.operator || 'RFI'}
+      </div>`;
+      L.polyline(coords, {color, weight, opacity: 0.8}).bindPopup(popContent).addTo(layers.rail);
+      count++;
+    });
+
+    // Update badge
+    const badge = document.getElementById('badge-rail');
+    if (badge) badge.textContent = `${count} segm. OSM`;
+    return count;
+  } catch(e) {
+    // Fallback to hardcoded data
+    return renderRailFallback();
+  }
+}
+
+function renderRailFallback() {
+  layers.rail.clearLayers();
+  RAIL_FALLBACK.slice(0, 6).forEach(seg => {
+    L.polyline(seg, {color:'#22d3ee', weight:3, opacity:0.8}).addTo(layers.rail);
+  });
+  RAIL_FALLBACK.slice(6).forEach(seg => {
+    L.polyline(seg, {color:'#06b6d4', weight:2, opacity:0.7}).addTo(layers.rail);
+  });
+  const badge = document.getElementById('badge-rail');
+  if (badge) badge.textContent = `${RAIL_FALLBACK.length} segm. (fallback)`;
+  return RAIL_FALLBACK.length;
+}
+
+function toggleRailNet(cb) {
+  if (cb.checked) {
+    fetchRailNetwork().then(() => layers.rail.addTo(map));
+  } else {
+    layers.rail.remove();
+  }
+}
+
+// ─── RAIL NODES TOGGLE ───────────────────────────────────────────────────────
+function toggleRailNodes(cb) {
+  if (cb.checked) layers.railnodes.addTo(map);
+  else layers.railnodes.remove();
+}
+
+// ─── HIGHWAY NETWORK ──────────────────────────────────────────────────────────
+const HW_CONCESSION_COLORS = {
+  'A1': '#f59e0b', 'A2': '#f59e0b', 'A3': '#f59e0b',
+  'A4': '#60a5fa', 'A5': '#60a5fa',
+  'A22': '#60a5fa', 'A13': '#f59e0b', 'A14': '#f59e0b',
+  'A16': '#f59e0b', 'A19': '#f59e0b', 'A18': '#4ade80',
+  'A20': '#4ade80', 'RA': '#a78bfa'
+};
+
+const HW_FALLBACK = [
+  {ref:'A1', coords:[[45.07,7.67],[44.51,11.34],[43.78,11.25],[42.05,12.47],[40.85,14.27]]},
+  {ref:'A4', coords:[[45.07,7.67],[45.49,9.2],[45.44,12.32],[45.67,13.77]]},
+  {ref:'A14', coords:[[44.51,11.34],[44.14,12.24],[43.62,13.51],[42.56,14.09],[41.45,15.55],[41.12,16.87],[40.47,17.22]]},
+  {ref:'A3', coords:[[40.85,14.27],[39.6,16.63],[38.11,15.65]]},
+  {ref:'A22', coords:[[47.0,11.5],[46.5,11.35],[45.67,11.0],[45.44,10.99]]},
+  {ref:'A7', coords:[[45.49,9.2],[44.41,8.93]]},
+  {ref:'A10', coords:[[44.41,8.93],[43.84,7.99]]},
+  {ref:'A12', coords:[[44.41,8.93],[43.55,10.31],[42.09,11.79]]},
+  {ref:'A26', coords:[[44.41,8.93],[45.07,8.68]]},
+  {ref:'A13', coords:[[44.51,11.34],[44.89,11.62],[45.44,12.32]]},
+  {ref:'A21', coords:[[45.07,7.67],[44.89,7.94],[45.0,9.7]]},
+  {ref:'A16', coords:[[40.85,14.27],[40.85,15.7],[41.45,15.55]]},
+  {ref:'A19', coords:[[38.12,13.37],[37.47,15.07],[37.07,15.29]]},
+];
+
+async function fetchHighways() {
+  const query = `[out:json][timeout:25];
+way["highway"="motorway"]["ref"](35,6,48,19);
+out geom;`;
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+      signal: AbortSignal.timeout(20000)
+    });
+    if (!res.ok) throw new Error('overpass fail');
+    const data = await res.json();
+
+    layers.highway.clearLayers();
+    const byRef = {};
+    data.elements.forEach(el => {
+      if (el.type !== 'way' || !el.geometry) return;
+      const ref = el.tags?.ref || 'A?';
+      const coords = el.geometry.map(p => [p.lat, p.lon]);
+      const color = HW_CONCESSION_COLORS[ref] || '#f59e0b';
+      if (!byRef[ref]) byRef[ref] = [];
+      const pop = `<div style="font-family:monospace;font-size:11px;color:#e2e8f0">
+        <b style="color:${color}">Autostrada ${ref}</b><br>
+        ${el.tags?.name || ''}<br>
+        Concessionaria: ${el.tags?.operator || 'N/D'}
+      </div>`;
+      L.polyline(coords, {color, weight: 2.5, opacity: 0.85}).bindPopup(pop).addTo(layers.highway);
+    });
+    const badge = document.getElementById('badge-hw');
+    if (badge) badge.textContent = `${Object.keys(byRef).length} autostrade OSM`;
+    return Object.keys(byRef).length;
+  } catch(e) {
+    return renderHwFallback();
+  }
+}
+
+function renderHwFallback() {
+  layers.highway.clearLayers();
+  HW_FALLBACK.forEach(hw => {
+    const color = HW_CONCESSION_COLORS[hw.ref] || '#f59e0b';
+    const pop = `<div style="font-family:monospace;font-size:12px;color:#e2e8f0"><b style="color:${color}">Autostrada ${hw.ref}</b></div>`;
+    L.polyline(hw.coords, {color, weight: 2.5, opacity: 0.8}).bindPopup(pop).addTo(layers.highway);
+  });
+  const badge = document.getElementById('badge-hw');
+  if (badge) badge.textContent = `${HW_FALLBACK.length} tratti (fallback)`;
+  return HW_FALLBACK.length;
+}
+
+function toggleHighway(cb) {
+  if (cb.checked) {
+    fetchHighways().then(() => layers.highway.addTo(map));
+  } else {
+    layers.highway.remove();
+  }
+}
+
+// ─── POWER NETWORK ────────────────────────────────────────────────────────────
+function togglePowerNet(cb) {
+  if (cb.checked) {
+    if (!layers.powerLines) {
+      layers.powerLines = L.layerGroup();
+      POWER_NET_SEGS.forEach(seg => {
+        L.polyline(seg, {color:'#eab308', weight:2, opacity:0.7, dashArray:'6,3'}).addTo(layers.powerLines);
+      });
+    }
+    layers.powerLines.addTo(map);
+    layers.power.addTo(map);
+  } else {
+    layers.powerLines && layers.powerLines.remove();
+    layers.power.remove();
+  }
+}
+
+// ─── GAS NETWORK ─────────────────────────────────────────────────────────────
+function toggleGasNet(cb) {
+  if (cb.checked) {
+    if (!layers.gasLines) {
+      layers.gasLines = L.layerGroup();
+      GAS_NET_SEGS.forEach(seg => {
+        L.polyline(seg, {color:'#f97316', weight:2, opacity:0.7, dashArray:'4,4'}).addTo(layers.gasLines);
+      });
+    }
+    layers.gasLines.addTo(map);
+    layers.gas.addTo(map);
+  } else {
+    layers.gasLines && layers.gasLines.remove();
+    layers.gas.remove();
+  }
+}
+
+// ─── PETROCHEMICAL LAYER ───────────────────────────────────────────────────────
+function togglePetrochem(cb) {
+  if (cb.checked) layers.petrochem.addTo(map);
+  else layers.petrochem.remove();
+}
+
+// ─── TOGGLE HELPERS ───────────────────────────────────────────────────────────
+function togglePorts(cb) {
+  if (cb.checked) layers.ports.addTo(map); else layers.ports.remove();
+}
+function toggleAirports(cb) {
+  if (cb.checked) layers.airports.addTo(map); else layers.airports.remove();
+}
+function toggleTunnels(cb) {
+  if (cb.checked) layers.tunnels.addTo(map); else layers.tunnels.remove();
+}
+function toggleGeo(cb) {
+  if (cb.checked) layers.geo.addTo(map); else layers.geo.remove();
+}
+
+
+// ─── NEWS FEEDS ───────────────────────────────────────────────────────────────
+let feedItems = [], feedGroups = new Set();
+
+function isItalyRelated(text) {
+  const t = (text || '').toLowerCase();
+  return IT_KEYWORDS.some(k => t.includes(k));
+}
+
+async function fetchFeed(feed) {
+  const proxy = 'https://api.allorigins.win/raw?url=';
+  try {
+    const res = await fetch(proxy + encodeURIComponent(feed.url), {signal: AbortSignal.timeout(10000)});
+    if (!res.ok) return [];
+    const text = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/xml');
+    const items = Array.from(doc.querySelectorAll('item'));
+    return items.slice(0, 20).map(it => {
+      const title = it.querySelector('title')?.textContent?.trim() || '';
+      const link = it.querySelector('link')?.textContent?.trim() || '';
+      const desc = it.querySelector('description')?.textContent?.replace(/<[^>]+>/g,'').trim() || '';
+      const pubDate = it.querySelector('pubDate')?.textContent?.trim() || '';
+      const dateStr = pubDate ? new Date(pubDate).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
+      return {title, link, desc, date: dateStr, source: feed.name, grp: feed.grp};
+    }).filter(it => it.title && it.link);
+  } catch(e) { return []; }
+}
+
+async function loadAllFeeds() {
+  const results = await Promise.allSettled(FEEDS.map(f => fetchFeed(f)));
+  feedItems = [];
+  results.forEach(r => { if (r.status === 'fulfilled') feedItems.push(...r.value); });
+  feedItems.sort((a, b) => b.date > a.date ? 1 : -1);
+  feedGroups = new Set(feedItems.map(it => it.grp));
+  renderFeedPanel();
+  assignGeoNews();
+  renderGeoNews();
+}
+
+function renderFeedPanel() {
+  const strip = document.getElementById('feed-grp-strip');
+  if (!strip) return;
+  const allGrps = ['ALL', ...feedGroups];
+  strip.innerHTML = allGrps.map(g =>
+    `<button onclick="filterFeed('${g}')" style="background:var(--bg3);border:1px solid var(--brd);border-radius:3px;padding:3px 8px;color:var(--text2);font-size:10px;cursor:pointer">${g}</button>`
+  ).join('');
+
+  const list = document.getElementById('flist');
+  if (!list) return;
+  const italyOnly = feedItems.filter(it => isItalyRelated(it.title + ' ' + it.desc));
+  list.innerHTML = italyOnly.slice(0, 60).map(it =>
+    `<div style="border-bottom:1px solid var(--brd);padding:6px 0">
+      <a href="${it.link}" target="_blank" rel="noopener" style="color:#93c5fd;font-size:12px;text-decoration:none;line-height:1.4;display:block;margin-bottom:2px">${it.title}</a>
+      <div style="display:flex;gap:8px">
+        <span style="color:#60a5fa;font-size:9px;font-weight:600">${it.source}</span>
+        ${it.date ? `<span style="color:#64748b;font-size:9px">${it.date}</span>` : ''}
+      </div>
+    </div>`
+  ).join('');
+}
+
+function filterFeed(grp) {
+  const list = document.getElementById('flist');
+  if (!list) return;
+  const filtered = grp === 'ALL' ? feedItems.filter(it => isItalyRelated(it.title))
+    : feedItems.filter(it => it.grp === grp && isItalyRelated(it.title));
+  list.innerHTML = filtered.slice(0, 60).map(it =>
+    `<div style="border-bottom:1px solid var(--brd);padding:6px 0">
+      <a href="${it.link}" target="_blank" rel="noopener" style="color:#93c5fd;font-size:12px;text-decoration:none;line-height:1.4;display:block;margin-bottom:2px">${it.title}</a>
+      <div style="display:flex;gap:8px">
+        <span style="color:#60a5fa;font-size:9px;font-weight:600">${it.source}</span>
+        ${it.date ? `<span style="color:#64748b;font-size:9px">${it.date}</span>` : ''}
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ─── GEO NEWS ASSIGNMENT ──────────────────────────────────────────────────────
+function assignGeoNews() {
+  geoNewsItems = [];
+  const cityNames = GEO_MARKERS.map(g => g.name.toLowerCase());
+  feedItems.forEach(item => {
+    const text = (item.title + ' ' + item.desc).toLowerCase();
+    GEO_MARKERS.forEach(geo => {
+      if (text.includes(geo.name.toLowerCase()) || isItalyRelated(text)) {
+        if (text.includes(geo.name.toLowerCase())) {
+          geoNewsItems.push({...item, city: geo.name});
+        }
+      }
+    });
+  });
+  // Also add all Italy-related items to Roma as fallback
+  const italyNews = feedItems.filter(it => isItalyRelated(it.title));
+  italyNews.slice(0, 20).forEach(it => {
+    if (!geoNewsItems.some(n => n.title === it.title && n.city === 'Roma')) {
+      geoNewsItems.push({...it, city: 'Roma'});
+    }
+  });
+}
+
+function renderGeoNews() {
+  const list = document.getElementById('geolist');
+  if (!list) return;
+  const items = activeGeoCity
+    ? geoNewsItems.filter(n => n.city === activeGeoCity)
+    : geoNewsItems.slice(0, 40);
+
+  if (items.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px">Nessuna news geolocalizzata disponibile.</div>';
+    return;
+  }
+
+  const lbl = document.getElementById('geo-city-lbl');
+  if (lbl && activeGeoCity) lbl.textContent = `📍 Filtrando per: ${activeGeoCity}`;
+
+  list.innerHTML = items.map(it =>
+    `<div class="pgn-item" style="border-bottom:1px solid var(--brd);padding:6px 0">
+      <a href="${it.link}" target="_blank" rel="noopener" class="pgn-ttl" style="color:#93c5fd;font-size:12px;text-decoration:none;line-height:1.4;display:block;margin-bottom:2px">${it.title}</a>
+      <div style="display:flex;gap:8px">
+        <span class="pgn-src" style="color:#60a5fa;font-size:9px;font-weight:600">${it.source}</span>
+        ${it.date ? `<span class="pgn-dt" style="color:#64748b;font-size:9px">${it.date}</span>` : ''}
+        ${it.city ? `<span style="color:#a78bfa;font-size:9px">📍${it.city}</span>` : ''}
+      </div>
+    </div>`
+  ).join('');
+}
+
+function filterGeoPanel(city) {
+  swRT('geo', null);
+  activeGeoCity = city;
+  const filter = document.getElementById('geo-city-filter');
+  if (filter) filter.style.display = 'flex';
+  renderGeoNews();
+}
+
+function clearGeoFilter() {
+  activeGeoCity = null;
+  const filter = document.getElementById('geo-city-filter');
+  if (filter) filter.style.display = 'none';
+  renderGeoNews();
+}
+
+// ─── INFRA PANEL ─────────────────────────────────────────────────────────────
+function renderInfraPanel() {
+  const list = document.getElementById('infralist');
+  if (!list) return;
+  const all = [...INFRA.ports, ...INFRA.airports, ...INFRA.petrochemical]
+    .filter(it => it.status === 'warn' || it.status === 'alert' || it.status === 'mon')
+    .sort((a, b) => {
+      const order = {alert:0, warn:1, mon:2};
+      return (order[a.status]||9) - (order[b.status]||9);
+    });
+
+  list.innerHTML = all.map(it => {
+    const color = STATUS_COLOR[it.status] || '#888';
+    const icon = TYPE_ICONS[it.type] || '●';
+    const label = {op:'OP', mon:'MON', warn:'WARN', alert:'ALERT'}[it.status];
+    return `<div style="border-bottom:1px solid var(--brd);padding:6px 0;display:flex;gap:8px;align-items:flex-start">
+      <div style="font-size:14px">${icon}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:1px">${it.name}</div>
+        <div style="font-size:10px;color:#94a3b8;line-height:1.3">${it.t}</div>
+      </div>
+      <div style="background:${color}22;border:1px solid ${color};border-radius:3px;padding:1px 6px;color:${color};font-size:9px;font-weight:700;white-space:nowrap">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+
+// ─── PANEL / TAB SWITCHING ────────────────────────────────────────────────────
+function swRT(id, btn) {
+  document.querySelectorAll('.rpane').forEach(p => p.classList.remove('a'));
+  document.querySelectorAll('.rtab').forEach(b => b.classList.remove('a'));
+  const pane = document.getElementById('rp-' + id);
+  if (pane) pane.classList.add('a');
+  if (btn) btn.classList.add('a');
+  else {
+    document.querySelectorAll('.rtab').forEach(b => {
+      if (b.getAttribute('onclick')?.includes(`'${id}'`)) b.classList.add('a');
+    });
+  }
+}
+
+function swView(id, btn) {
+  document.querySelectorAll('.view-pane').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.vtab').forEach(b => b.classList.remove('a'));
+  const pane = document.getElementById('vp-' + id);
+  if (pane) pane.style.display = 'flex';
+  if (btn) btn.classList.add('a');
+}
+
+// ─── FILTER BAR ───────────────────────────────────────────────────────────────
+function setFilter(type, btn) {
+  activeFilter = type;
+  document.querySelectorAll('.fbar-btn').forEach(b => b.classList.remove('a'));
+  if (btn) btn.classList.add('a');
+  // Show/hide layer groups based on filter
+  const mp = document.getElementById('map-pane');
+  // Apply visual filter to map layers
+  applyMapFilter(type);
+}
+
+function applyMapFilter(type) {
+  switch(type) {
+    case 'all':
+      // Show everything currently toggled on
+      break;
+    case 'energy':
+      // Highlight power and gas layers
+      if (map.hasLayer(layers.powerLines)) {}
+      break;
+    case 'maritime':
+      layers.ships.addTo(map);
+      break;
+    case 'air':
+      layers.flights.addTo(map);
+      break;
+    case 'petro':
+      layers.petrochem.addTo(map);
+      break;
+    case 'geo':
+      layers.geo.addTo(map);
+      break;
+  }
+}
+
+// ─── KNOWLEDGE MAP (SVG) ─────────────────────────────────────────────────────
+function renderKM() {
+  const svg = document.getElementById('km-svg');
+  if (!svg) return;
+  const W = svg.parentElement.offsetWidth || 400;
+  const H = svg.parentElement.offsetHeight || 300;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const nodes = [
+    {id:'ENI', x:0.3, y:0.3, label:'ENI', color:'#f97316'},
+    {id:'TERNA', x:0.5, y:0.15, label:'TERNA', color:'#eab308'},
+    {id:'SNAM', x:0.7, y:0.25, label:'SNAM', color:'#f97316'},
+    {id:'MIT', x:0.5, y:0.5, label:'MIT', color:'#60a5fa'},
+    {id:'NATO', x:0.15, y:0.5, label:'NATO', color:'#a78bfa'},
+    {id:'EU', x:0.85, y:0.5, label:'UE', color:'#22d3ee'},
+    {id:'RFI', x:0.5, y:0.75, label:'RFI', color:'#06b6d4'},
+    {id:'MISE', x:0.3, y:0.65, label:'MISE', color:'#60a5fa'},
+    {id:'MASE', x:0.7, y:0.65, label:'MASE', color:'#4ade80'}
+  ];
+
+  const edges = [
+    ['ENI','MIT'],['TERNA','MIT'],['SNAM','MIT'],
+    ['MIT','NATO'],['MIT','EU'],['RFI','MIT'],
+    ['MISE','MIT'],['MASE','MIT'],['ENI','SNAM'],
+    ['TERNA','EU'],['NATO','MIT']
+  ];
+
+  const linksG = document.getElementById('km-links');
+  const nodesG = document.getElementById('km-nodes');
+  linksG.innerHTML = '';
+  nodesG.innerHTML = '';
+
+  const pos = {};
+  nodes.forEach(n => { pos[n.id] = {x: n.x * W, y: n.y * H}; });
+
+  edges.forEach(([a, b]) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', pos[a].x); line.setAttribute('y1', pos[a].y);
+    line.setAttribute('x2', pos[b].x); line.setAttribute('y2', pos[b].y);
+    line.setAttribute('stroke', '#334155'); line.setAttribute('stroke-width', '1.5');
+    linksG.appendChild(line);
+  });
+
+  nodes.forEach(n => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', pos[n.id].x); c.setAttribute('cy', pos[n.id].y);
+    c.setAttribute('r', '18'); c.setAttribute('fill', n.color + '33');
+    c.setAttribute('stroke', n.color); c.setAttribute('stroke-width', '2');
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', pos[n.id].x); t.setAttribute('y', pos[n.id].y + 4);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('fill', n.color);
+    t.setAttribute('font-size', '9'); t.setAttribute('font-family', 'monospace');
+    t.textContent = n.label;
+    g.appendChild(c); g.appendChild(t);
+    nodesG.appendChild(g);
+  });
+}
+
+// ─── RADAR (SVG) ──────────────────────────────────────────────────────────────
+function renderRadar() {
+  const svg = document.getElementById('radar-svg');
+  if (!svg) return;
+  const W = svg.parentElement.offsetWidth || 300;
+  const H = svg.parentElement.offsetHeight || 300;
+  const cx = W / 2, cy = H / 2;
+  const R = Math.min(W, H) * 0.4;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = '';
+
+  const axes = ['Marittimo','Aereo','Ferroviario','Energia','Geo-rischio','Industria'];
+  const values = [
+    Math.min(Object.keys(rawShips).length / 50, 1),
+    Math.min(rawFlights.length / 80, 1),
+    0.7,
+    0.8,
+    GEO_MARKERS.filter(g => g.level === 'alert' || g.level === 'warn').length / GEO_MARKERS.length,
+    0.6
+  ];
+  const n = axes.length;
+
+  // Draw rings
+  for (let r = 0.25; r <= 1; r += 0.25) {
+    const pts = axes.map((_, i) => {
+      const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+      return `${cx + R * r * Math.cos(angle)},${cy + R * r * Math.sin(angle)}`;
+    }).join(' ');
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', pts);
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', '#334155');
+    poly.setAttribute('stroke-width', '1');
+    svg.appendChild(poly);
+  }
+
+  // Draw axes
+  axes.forEach((axis, i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', cx + R * Math.cos(angle));
+    line.setAttribute('y2', cy + R * Math.sin(angle));
+    line.setAttribute('stroke', '#475569'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', cx + (R + 18) * Math.cos(angle));
+    t.setAttribute('y', cy + (R + 18) * Math.sin(angle) + 3);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('fill', '#64748b'); t.setAttribute('font-size', '8');
+    t.setAttribute('font-family', 'monospace');
+    t.textContent = axis;
+    svg.appendChild(t);
+  });
+
+  // Draw data polygon
+  const pts = values.map((v, i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+    return `${cx + R * v * Math.cos(angle)},${cy + R * v * Math.sin(angle)}`;
+  }).join(' ');
+  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  poly.setAttribute('points', pts);
+  poly.setAttribute('fill', '#60a5fa33');
+  poly.setAttribute('stroke', '#60a5fa');
+  poly.setAttribute('stroke-width', '2');
+  svg.appendChild(poly);
+}
+
+// ─── AI REPORT ────────────────────────────────────────────────────────────────
+async function generateReport() {
+  const focus = document.getElementById('rep-focus')?.value || 'all';
+  const out = document.getElementById('rep-out');
+  if (!out) return;
+
+  if (!CFG.claudeKey) {
+    out.textContent = '⚠️ Chiave API Anthropic non configurata.\n\nVai in ⚙️ Impostazioni per inserire la chiave sk-ant-api03-...\n\nOppure leggi il report di seguito basato sui dati correnti:\n\n' + buildLocalReport(focus);
+    return;
+  }
+
+  out.textContent = '⏳ Generazione report in corso…';
+
+  const ctx = buildReportContext(focus);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': CFG.claudeKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-calls': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        messages: [{role:'user', content: `Sei un analista di intelligence italiano specializzato in sicurezza delle infrastrutture critiche. Analizza i seguenti dati e produci un briefing conciso (max 400 parole) in italiano:\n\n${ctx}`}]
+      })
+    });
+    const data = await res.json();
+    out.textContent = data.content?.[0]?.text || JSON.stringify(data);
+  } catch(e) {
+    out.textContent = '⚠️ Errore API: ' + e.message + '\n\n' + buildLocalReport(focus);
+  }
+}
+
+function buildReportContext(focus) {
+  const shipCount = Object.keys(rawShips).length;
+  const milFlights = rawFlights.filter(f => classifyFlight(f[0], f[1]) === 'mil').length;
+  const govFlights = rawFlights.filter(f => classifyFlight(f[0], f[1]) === 'gov').length;
+  const alertSites = INFRA.petrochemical.filter(p => p.status === 'alert' || p.status === 'warn').map(p => p.name).join(', ');
+  const alertGeo = GEO_MARKERS.filter(g => g.level === 'alert').map(g => g.name).join(', ');
+  return `DATA: ${new Date().toLocaleString('it-IT')}
+FOCUS: ${focus}
+TRAFFICO MARITTIMO: ${shipCount} navi monitorate in acque italiane
+TRAFFICO AEREO: ${rawFlights.length} voli (${milFlights} militari, ${govFlights} governativi)
+SITI IN ALLERTA: ${alertSites || 'nessuno'}
+AREE GEO-RISCHIO ELEVATO: ${alertGeo || 'nessuna'}
+NEWS ITALIA: ${feedItems.filter(it => isItalyRelated(it.title)).slice(0, 5).map(it => it.title).join(' | ')}`;
+}
+
+function buildLocalReport(focus) {
+  const shipCount = Object.keys(rawShips).length;
+  const milFlights = rawFlights.filter(f => classifyFlight(f[0], f[1]) === 'mil').length;
+  const ts = new Date().toLocaleString('it-IT');
+  return `BRIEFING INFRASTRUTTURE CRITICHE ITALIA
+Data: ${ts}
+
+SITUAZIONE MARITTIMA: ${shipCount > 0 ? `${shipCount} navi monitorate` : 'Monitoraggio AIS non attivo (configurare chiave AISstream)'}
+
+SITUAZIONE AEREA: ${rawFlights.length > 0 ? `${rawFlights.length} voli tracciati di cui ${milFlights} militari` : 'Dati non disponibili'}
+
+CRITICITÀ ENERGETICA:
+- ISAB Augusta-Priolo: scrutinio geopolitico per proprietà (ex Lukoil)
+- Porto Torres: crisi riconversione petrolchimica
+- ENI Taranto: riduzione capacità operativa
+
+RISCHIO GEOPOLITICO ELEVATO:
+- Taranto: crisi industriale ex Ilva + porto militare
+- Augusta-Priolo: cluster petrolchimico sotto scrutinio
+- Porto Torres: riconversione in crisi
+
+Per un'analisi AI approfondita, configurare la chiave Anthropic in Impostazioni.`;
+}
+
+function saveReport() {
+  const content = document.getElementById('rep-out')?.textContent || '';
+  if (!content || content.includes('Clicca GENERA')) return;
+  const report = {
+    id: Date.now(),
+    date: new Date().toLocaleString('it-IT'),
+    preview: content.substring(0, 100) + '…',
+    content
+  };
+  savedReports.unshift(report);
+  if (savedReports.length > 20) savedReports.pop();
+  localStorage.setItem('saved_reports', JSON.stringify(savedReports));
+  renderSavedReports();
+}
+
+function renderSavedReports() {
+  const list = document.getElementById('slist');
+  if (!list) return;
+  if (savedReports.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px">Nessun report salvato.</div>';
+    return;
+  }
+  list.innerHTML = savedReports.map(r =>
+    `<div style="border-bottom:1px solid var(--brd);padding:8px 0">
+      <div style="font-size:10px;color:#60a5fa;margin-bottom:3px">${r.date}</div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">${r.preview}</div>
+      <button onclick="viewReport(${r.id})" style="background:var(--bg3);border:1px solid var(--brd);border-radius:3px;padding:2px 8px;color:var(--text2);font-size:10px;cursor:pointer">Visualizza</button>
+    </div>`
+  ).join('');
+}
+
+function viewReport(id) {
+  const r = savedReports.find(x => x.id === id);
+  if (!r) return;
+  const out = document.getElementById('rep-out');
+  if (out) out.textContent = r.content;
+  document.getElementById('modal-report').style.display = 'flex';
+}
+
+function openReport() {
+  document.getElementById('modal-report').style.display = 'flex';
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  renderInfraPanel();
+  renderSavedReports();
+
+  // Set default view
+  swView('map', document.querySelector('.vtab'));
+
+  // KM and Radar render on tab switch
+  document.getElementById('vp-km')?.parentElement?.querySelectorAll('.vtab').forEach(b => {
+    b.addEventListener('click', () => {
+      setTimeout(() => { renderKM(); renderRadar(); }, 50);
+    });
+  });
+
+  // Update radar periodically
+  setInterval(() => {
+    const radarPane = document.getElementById('vp-radar');
+    if (radarPane && radarPane.style.display !== 'none') renderRadar();
+  }, 30000);
+
+  // Reload feeds every 15 minutes
+  setInterval(loadAllFeeds, 15 * 60 * 1000);
+});
+
+// ─── MISSING UTILITY FUNCTIONS ────────────────────────────────────────────────
+function openSet() {
+  openSettings();
+}
+
+function openRep() {
+  openReport();
+}
+
+function switchView(id, btn) {
+  document.querySelectorAll('.view-pane').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.vtab').forEach(b => b.classList.remove('a'));
+  const pane = document.getElementById('vp-' + id);
+  if (pane) pane.style.display = 'flex';
+  if (btn) btn.classList.add('a');
+  if (id === 'km') setTimeout(renderKM, 50);
+  if (id === 'radar') setTimeout(renderRadar, 50);
+}
+
+function setMainFilter(type, btn) {
+  document.querySelectorAll('.fb').forEach(b => b.classList.remove('a'));
+  if (btn) btn.classList.add('a');
+  activeFilter = type;
+  // Show relevant layers on map
+  switch(type) {
+    case 'ports': layers.ports.addTo(map); break;
+    case 'airports': layers.airports.addTo(map); break;
+    case 'rail': layers.railnodes.addTo(map); break;
+    case 'tunnels': layers.tunnels.addTo(map); break;
+    case 'energy': layers.power.addTo(map); layers.gas.addTo(map); break;
+  }
+}
+
+function toggleTraffic() {
+  const cb = document.getElementById('ly-traffic');
+  const badge = document.getElementById('traffic-badge');
+  if (!cb) return;
+  if (cb.checked) {
+    if (!CFG.hereKey) {
+      if (badge) badge.textContent = 'NO KEY';
+      cb.checked = false;
+      return;
+    }
+    // HERE traffic tiles
+    if (layers.hereTraffic) layers.hereTraffic.remove();
+    layers.hereTraffic = L.tileLayer(
+      `https://{s}.traffic.maps.ls.hereapi.com/maptile/2.1/traffictile/newest/normal.day/{z}/{x}/{y}/256/png8?apiKey=${CFG.hereKey}`,
+      {subdomains:'1234', maxZoom:18, opacity:0.7}
+    ).addTo(map);
+    if (badge) badge.textContent = 'LIVE';
+  } else {
+    if (layers.hereTraffic) { layers.hereTraffic.remove(); layers.hereTraffic = null; }
+    if (badge) badge.textContent = 'OFF';
+  }
+}
+
+// Update clock
+(function updateClock() {
+  const el = document.getElementById('clk');
+  if (el) {
+    el.textContent = new Date().toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  }
+  setTimeout(updateClock, 1000);
+})();
+
+</script>
+</body>
+</html>
