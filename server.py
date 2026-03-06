@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-OSSN Italia v8 — Backend AIS
+OSSN Italia v8 — Backend AIS (sorgente: AISHub)
 Zero dipendenze pip — richiede Python 3.8+ (preinstallato su Windows 10/11)
 
+PREREQUISITO: account gratuito su https://www.aishub.net/join
+              → inserire il proprio username in AISHUB_USER qui sotto
+
 AVVIO:
-  Windows  → doppio clic su  start.bat
+  Windows   → doppio clic su  start.bat
   Mac/Linux → python3 server.py
 
 BROWSER:  http://localhost:3001
@@ -14,19 +17,18 @@ BROWSER:  http://localhost:3001
 import http.server
 import socketserver
 import threading
-import socket
-import ssl
 import json
-import struct
 import os
-import base64
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
+from urllib.request import urlopen
+from urllib.error import URLError
 
-PORT    = 3001
-AIS_KEY = '7a197b841b6701faf083fe0480b223ca96722489'
-AIS_HOST = 'stream.aisstream.io'
-AIS_PATH = '/v0/stream'
+# ─── CONFIGURAZIONE ───────────────────────────────────────────────────────────
+PORT          = 3001
+AISHUB_USER   = 'AH_XXXXXXX'   # ← sostituire con il proprio username AISHub
+POLL_INTERVAL = 65              # secondi tra un polling e il successivo (min 60)
+BBOX          = dict(latmin=35, latmax=48, lonmin=6, lonmax=19)  # acque italiane
 
 # ─── SSE CLIENT POOL ─────────────────────────────────────────────────────────
 _lock      = threading.Lock()
@@ -76,8 +78,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             with _lock:
                 _clients.add(self.wfile)
-            n = len(_clients)
-            print(f'[sse] Browser connesso ({n} totale)')
+            print(f'[sse] Browser connesso ({len(_clients)} totale)')
             try:
                 while True:
                     time.sleep(20)
@@ -94,9 +95,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # ── Status JSON ──────────────────────────────────────────────────────
         if path == '/api/status':
             body = json.dumps({
-                'ok':      True,
-                'ships':   len(_ships),
-                'clients': len(_clients),
+                'ok':       True,
+                'ships':    len(_ships),
+                'clients':  len(_clients),
                 'msgTotal': _msg_total,
             }).encode()
             self.send_response(200)
@@ -127,146 +128,140 @@ class Handler(http.server.BaseHTTPRequestHandler):
 class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
 
-# ─── WebSocket CLIENT (stdlib puro) ──────────────────────────────────────────
+# ─── CONVERSIONE FORMATO AISHub → aisstream.io ───────────────────────────────
 
-def _recv_exact(sock, n: int) -> bytes:
-    buf = b''
-    while len(buf) < n:
-        chunk = sock.recv(n - len(buf))
-        if not chunk:
-            raise ConnectionError('socket chiuso')
-        buf += chunk
-    return buf
+def _vessel_to_sse(v: dict) -> str | None:
+    """Converte un record AISHub in JSON formato aisstream.io atteso dal frontend."""
+    try:
+        mmsi = int(v['MMSI'])
+        lat  = int(v['LATITUDE'])  / 600000.0
+        lon  = int(v['LONGITUDE']) / 600000.0
+        sog  = int(v.get('SOG', 0))  / 10.0
+        cog  = int(v.get('COG', 0))  / 10.0
+        navstat = int(v.get('NAVSTAT', 0))
+        name    = str(v.get('NAME', '')).strip()
+        ship_type = int(v.get('TYPE', 0))
+        dest    = str(v.get('DEST', '')).strip()
+    except (KeyError, ValueError, TypeError):
+        return None
 
-def _ws_send(sock, text: str):
-    payload = text.encode()
-    n = len(payload)
-    mask = os.urandom(4)
-    masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
-    hdr = bytearray([0x81])
-    if n < 126:
-        hdr.append(0x80 | n)
-    elif n < 65536:
-        hdr.append(0x80 | 126)
-        hdr += struct.pack('>H', n)
-    else:
-        hdr.append(0x80 | 127)
-        hdr += struct.pack('>Q', n)
-    hdr += mask
-    sock.sendall(bytes(hdr) + masked)
+    # Filtra coordinate nulle o fuori bbox (doppia verifica)
+    if lat == 0.0 and lon == 0.0:
+        return None
+    if not (BBOX['latmin'] <= lat <= BBOX['latmax'] and
+            BBOX['lonmin'] <= lon <= BBOX['lonmax']):
+        return None
 
-def _ws_recv(sock) -> str | None:
-    hdr    = _recv_exact(sock, 2)
-    opcode = hdr[0] & 0x0F
-    masked = bool(hdr[1] & 0x80)
-    length = hdr[1] & 0x7F
-    if opcode == 8:
-        return None                          # close
-    if opcode == 9:                          # ping → pong
-        sock.sendall(b'\x8a\x00')
-        return _ws_recv(sock)
-    if length == 126:
-        length = struct.unpack('>H', _recv_exact(sock, 2))[0]
-    elif length == 127:
-        length = struct.unpack('>Q', _recv_exact(sock, 8))[0]
-    mk      = _recv_exact(sock, 4) if masked else b'\x00' * 4
-    payload = _recv_exact(sock, length)
-    payload = bytes(b ^ mk[i % 4] for i, b in enumerate(payload))
-    if opcode in (1, 2):
-        return payload.decode('utf-8', errors='replace')
-    return ''
+    msg = {
+        'MessageType': 'PositionReport',
+        'MetaData': {
+            'MMSI':      mmsi,
+            'latitude':  lat,
+            'longitude': lon,
+            'ShipName':  name,
+            'Type':      ship_type,
+        },
+        'Message': {
+            'PositionReport': {
+                'Latitude':           lat,
+                'Longitude':          lon,
+                'Sog':                sog,
+                'Cog':                cog,
+                'NavigationalStatus': navstat,
+            }
+        },
+    }
+    if dest:
+        msg['MetaData']['Destination'] = dest
 
-# ─── AIS CONNECTION LOOP ─────────────────────────────────────────────────────
+    return json.dumps(msg)
 
-def ais_loop():
+# ─── AISHub POLLING LOOP ──────────────────────────────────────────────────────
+
+_AISHUB_URL = 'https://data.aishub.net/ws.php'
+
+def aishub_loop():
     global _msg_total
+
+    if AISHUB_USER == 'AH_XXXXXXX':
+        print('[ais] ATTENZIONE: inserire il proprio username AISHub in AISHUB_USER')
+        print('[ais]             Registrazione gratuita su https://www.aishub.net/join')
+
     retries = 0
     while True:
-        print(f'[ais] Connessione a {AIS_HOST} (tentativo {retries + 1})...')
-        sock = None
+        params = urlencode({
+            'username': AISHUB_USER,
+            'format':   1,
+            'output':   'json',
+            'compress': 0,
+            **BBOX,
+        })
+        url = f'{_AISHUB_URL}?{params}'
+
         try:
-            ctx = ssl.create_default_context()
-            raw = socket.create_connection((AIS_HOST, 443), timeout=15)
-            sock = ctx.wrap_socket(raw, server_hostname=AIS_HOST)
+            print(f'[ais] Polling AISHub...', end=' ', flush=True)
+            with urlopen(url, timeout=20) as resp:
+                raw = resp.read().decode('utf-8', errors='replace')
 
-            # HTTP upgrade
-            key = base64.b64encode(os.urandom(16)).decode()
-            sock.sendall((
-                f'GET {AIS_PATH} HTTP/1.1\r\n'
-                f'Host: {AIS_HOST}\r\n'
-                f'Upgrade: websocket\r\n'
-                f'Connection: Upgrade\r\n'
-                f'Sec-WebSocket-Key: {key}\r\n'
-                f'Sec-WebSocket-Version: 13\r\n'
-                f'User-Agent: OSSN/8.0\r\n'
-                f'\r\n'
-            ).encode())
+            records = json.loads(raw)
 
-            resp = b''
-            while b'\r\n\r\n' not in resp:
-                resp += sock.recv(4096)
-            if b'101' not in resp:
-                raise Exception(f'Handshake fallito: {resp[:120]}')
+            # Il primo elemento è l'header di stato
+            if not isinstance(records, list) or len(records) < 1:
+                raise ValueError('Risposta inattesa')
+
+            header = records[0]
+            err = header.get('ERROR', '')
+            if err:
+                print(f'\n[ais] Errore AISHub: {err}')
+                retries += 1
+                time.sleep(min(30, 5 * retries))
+                continue
+
+            vessels = records[1:]
+            count   = 0
+            for v in vessels:
+                sse = _vessel_to_sse(v)
+                if sse is None:
+                    continue
+                mmsi = v.get('MMSI')
+                if mmsi:
+                    _ships.add(int(mmsi))
+                _msg_total += 1
+                count += 1
+                broadcast(sse)
 
             retries = 0
-            print('[ais] Connesso ✓')
-            time.sleep(0.1)
-            _ws_send(sock, json.dumps({
-                'APIKey':             AIS_KEY,
-                'BoundingBoxes':      [[[35, 6], [48, 19]]],
-                'FilterMessageTypes': ['PositionReport', 'ClassBPositionReport', 'ShipStaticData'],
-            }))
-            print('[ais] Subscription inviata ✓')
+            print(f'{count} navi  (totale {len(_ships)} MMSI unici, {len(_clients)} browser)')
 
-            while True:
-                data = _ws_recv(sock)
-                if data is None:
-                    break
-                if not data:
-                    continue
-                _msg_total += 1
-                try:
-                    msg = json.loads(data)
-                    err = msg.get('error') or msg.get('Error')
-                    if err:
-                        print(f'[ais] Errore API: {err}')
-                        break
-                    mmsi = (msg.get('MetaData') or {}).get('MMSI')
-                    if mmsi and msg.get('MessageType') != 'ShipStaticData':
-                        _ships.add(mmsi)
-                except Exception:
-                    pass
-                if _msg_total % 50 == 0:
-                    print(f'\r[ais] {_msg_total} msg  {len(_ships)} navi  {len(_clients)} browser   ', end='', flush=True)
-                broadcast(data)
-
+        except URLError as e:
+            retries += 1
+            delay = min(2 * (2 ** (retries - 1)), 60)
+            print(f'\n[ais] Errore rete: {e.reason} — riprovo in {delay}s')
+            time.sleep(delay)
+            continue
         except Exception as e:
-            print(f'\n[ais] Errore: {e}')
-        finally:
-            if sock:
-                try: sock.close()
-                except Exception: pass
+            retries += 1
+            delay = min(2 * (2 ** (retries - 1)), 60)
+            print(f'\n[ais] Errore: {e} — riprovo in {delay}s')
+            time.sleep(delay)
+            continue
 
-        retries += 1
-        delay = min(2 * (2 ** (retries - 1)), 30)
-        print(f'\n[ais] Riconnessione in {delay}s...')
-        time.sleep(delay)
-
+        time.sleep(POLL_INTERVAL)
 
 # ─── AVVIO ────────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     print(f"""
 ╔══════════════════════════════════════════════════════╗
-║         OSSN Italia v8 — AIS Backend                 ║
+║         OSSN Italia v8 — AIS Backend (AISHub)        ║
 ╠══════════════════════════════════════════════════════╣
 ║  Browser →  http://localhost:{PORT}                    ║
 ║  Status  →  http://localhost:{PORT}/api/status          ║
 ╠══════════════════════════════════════════════════════╣
+║  Sorgente dati: AISHub (polling ogni {POLL_INTERVAL}s)        ║
 ║  Attiva "Navi AIS live" nel pannello Layer           ║
-║  Le navi appaiono sulla mappa entro ~30 secondi      ║
 ╚══════════════════════════════════════════════════════╝
 """)
-    threading.Thread(target=ais_loop, daemon=True).start()
+    threading.Thread(target=aishub_loop, daemon=True).start()
     httpd = ThreadedServer(('127.0.0.1', PORT), Handler)
     try:
         httpd.serve_forever()
