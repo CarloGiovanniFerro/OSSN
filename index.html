@@ -651,7 +651,7 @@ const IT_KEYWORDS = ['italia','italy','italian','italiano','italiana','roma','mi
 let map, layers = {}, rawShips = {}, rawFlights = [], flightTimer = null;
 let shipMarkers = [], flightMarkers = [], railLines = [], hwLines = [];
 let powerLines = [], gasLines = [], petroMarkers = [], geoMarkers = [];
-let tunnelLayers = {}, aisWs = null;
+let tunnelLayers = {}, aisWs = null, aisEvtSource = null;
 let geoNewsItems = [], activeGeoCity = null;
 let savedReports = JSON.parse(localStorage.getItem('saved_reports') || '[]');
 let activeFilter = 'all';
@@ -981,128 +981,115 @@ function _aisStatus(txt) {
   if (el) el.textContent = `AIS: ${txt}`;
 }
 
+// Parsing comune per messaggi raw aisstream (usato sia da SSE che da WS diretto)
+function _onAISData(raw) {
+  try {
+    const msg = JSON.parse(raw);
+    if (msg.error || msg.Error) {
+      const err = msg.error || msg.Error;
+      console.error('[AIS] Errore API:', err);
+      _aisStatus(`✗ ${err}`);
+      return;
+    }
+    if (!msg.MessageType && !msg.MetaData) return; // messaggio di sistema
+    _aisMsgCount++;
+    const shipCount = Object.keys(rawShips).filter(k => rawShips[k].lat).length;
+    _aisStatus(`● ${_aisMsgCount} msg / ${shipCount} navi`);
+    const mmsi = msg.MetaData?.MMSI ?? msg.MetaData?.MMSI_String ?? msg.mmsi;
+    if (!mmsi) return;
+    const key = String(mmsi);
+    if (msg.MessageType === 'ShipStaticData') {
+      const sd = msg.Message?.ShipStaticData || {};
+      rawShips[key] = Object.assign(rawShips[key] || {mmsi: key}, {
+        name: sd.Name?.trim() || rawShips[key]?.name,
+        ship_type: sd.Type ?? rawShips[key]?.ship_type,
+        destination: sd.Destination?.trim() || rawShips[key]?.destination,
+        flag: msg.MetaData?.flag || rawShips[key]?.flag
+      });
+    } else {
+      const pos = msg.Message?.PositionReport || msg.Message?.ClassBPositionReport || {};
+      const lat = (pos.Latitude != null ? pos.Latitude : null) ?? msg.MetaData?.latitude ?? null;
+      const lng = (pos.Longitude != null ? pos.Longitude : null) ?? msg.MetaData?.longitude ?? null;
+      if (lat == null || lng == null) return;
+      if (lat === 0 && lng === 0) return;
+      if (lat < 30 || lat > 50 || lng < 4 || lng > 22) return;
+      rawShips[key] = Object.assign(rawShips[key] || {}, {
+        mmsi: key, lat, lng,
+        sog: pos.Sog, cog: pos.Cog,
+        navigation_status: pos.NavigationalStatus,
+        name: msg.MetaData?.ShipName?.trim() || rawShips[key]?.name,
+        flag: msg.MetaData?.flag || rawShips[key]?.flag,
+        ship_type: rawShips[key]?.ship_type,
+        destination: rawShips[key]?.destination
+      });
+      renderShip(key);
+    }
+  } catch(e) {
+    console.error('[AIS] Parse error:', e, raw?.substring(0, 120));
+  }
+}
+
 function startAIS() {
   if (!CFG.aisKey) { _aisStatus('✗ no key'); return; }
+  _aisMsgCount = 0;
+
+  const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+  // ── Modalità SSE (backend locale node server.js) ─────────────────────────
+  if (isLocal && !CFG.aisRelay) {
+    if (aisEvtSource) { aisEvtSource.close(); aisEvtSource = null; }
+    _aisStatus('↻ backend…');
+    console.log('[AIS] Connessione al backend locale via SSE…');
+    aisEvtSource = new EventSource(`http://${window.location.hostname}:3001/ais-stream`);
+    aisEvtSource.onopen = () => {
+      _aisRetries = 0;
+      _aisStatus('● backend live');
+      console.log('[AIS] SSE connesso ✓');
+    };
+    aisEvtSource.onmessage = (evt) => _onAISData(evt.data);
+    aisEvtSource.onerror = () => {
+      _aisStatus('✗ backend offline');
+      console.warn('[AIS] SSE errore — server.js attivo? → node server.js');
+    };
+    return;
+  }
+
+  // ── Modalità WebSocket (relay manuale o aisstream diretto) ────────────────
   if (aisWs && aisWs.readyState === WebSocket.OPEN) return;
   if (aisWs) { aisWs.close(); aisWs = null; }
 
-  _aisMsgCount = 0;
-  // Auto-detect backend locale (node server.js); fallback a relay manuale o aisstream diretto
-  const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const autoRelay = isLocal ? `ws://${window.location.hostname}:3001/ws` : null;
-  const aisEndpoint = CFG.aisRelay || autoRelay || 'wss://stream.aisstream.io/v0/stream';
+  const aisEndpoint = CFG.aisRelay || 'wss://stream.aisstream.io/v0/stream';
   _aisStatus('↻ conn…');
-  console.log(`[AIS] Connessione a ${aisEndpoint}…`);
-
+  console.log(`[AIS] WebSocket → ${aisEndpoint}`);
   aisWs = new WebSocket(aisEndpoint);
 
-  // timeout connessione
   const connTimeout = setTimeout(() => {
     if (aisWs && aisWs.readyState !== WebSocket.OPEN) {
-      console.warn('[AIS] Timeout connessione');
-      _aisStatus('✗ timeout');
-      aisWs.close();
+      _aisStatus('✗ timeout'); aisWs.close();
     }
   }, 10000);
 
   aisWs.onopen = () => {
-    clearTimeout(connTimeout);
-    _aisRetries = 0;
-    _aisStatus('● abbonamento…');
-    console.log('[AIS] Connesso — invio subscription (100ms delay)');
-    // Piccolo delay: alcuni browser chiamano onopen prima che il socket sia
-    // completamente pronto per scrivere, causando chiusura immediata del server
+    clearTimeout(connTimeout); _aisRetries = 0; _aisStatus('● abbonamento…');
     setTimeout(() => {
-      if (aisWs && aisWs.readyState === WebSocket.OPEN) {
+      if (aisWs?.readyState === WebSocket.OPEN) {
         aisWs.send(JSON.stringify({
           APIKey: CFG.aisKey,
           BoundingBoxes: [[[35, 6], [48, 19]]],
           FilterMessageTypes: ['PositionReport', 'ClassBPositionReport', 'ShipStaticData']
         }));
-        console.log('[AIS] Subscription inviata');
-      } else {
-        console.warn('[AIS] Socket chiuso prima dell\'invio subscription — stato:', aisWs?.readyState);
       }
     }, 100);
   };
-
-  aisWs.onmessage = (evt) => {
-    try {
-      const msg = JSON.parse(evt.data);
-
-      // errori espliciti dall'API
-      if (msg.error || msg.Error) {
-        const err = msg.error || msg.Error;
-        console.error('[AIS] Errore API:', err);
-        _aisStatus(`✗ ${err}`);
-        aisWs.close();
-        return;
-      }
-      // messaggio di stato/conferma (es. {"status":"ok"})
-      if (!msg.MessageType && !msg.MetaData) {
-        console.log('[AIS] Msg di sistema:', msg);
-        return;
-      }
-
-      _aisMsgCount++;
-      const shipCount = Object.keys(rawShips).filter(k => rawShips[k].lat).length;
-      _aisStatus(`● ${_aisMsgCount} msg / ${shipCount} navi`);
-
-      const mmsi = msg.MetaData?.MMSI ?? msg.MetaData?.MMSI_String ?? msg.mmsi;
-      if (!mmsi) return;
-      const key = String(mmsi);
-
-      if (msg.MessageType === 'ShipStaticData') {
-        const sd = msg.Message?.ShipStaticData || {};
-        rawShips[key] = Object.assign(rawShips[key] || {mmsi: key}, {
-          name: sd.Name?.trim() || rawShips[key]?.name,
-          ship_type: sd.Type ?? rawShips[key]?.ship_type,
-          destination: sd.Destination?.trim() || rawShips[key]?.destination,
-          flag: msg.MetaData?.flag || rawShips[key]?.flag
-        });
-      } else {
-        const pos = msg.Message?.PositionReport || msg.Message?.ClassBPositionReport || {};
-        // Posizione: prima da Message, fallback su MetaData
-        const lat = (pos.Latitude != null ? pos.Latitude : null) ?? msg.MetaData?.latitude ?? null;
-        const lng = (pos.Longitude != null ? pos.Longitude : null) ?? msg.MetaData?.longitude ?? null;
-        if (lat == null || lng == null) return;
-        // Filtra dati nulli AIS (0,0 = dati mancanti nel protocollo)
-        if (lat === 0 && lng === 0) return;
-        if (lat < 30 || lat > 50 || lng < 4 || lng > 22) return;
-        rawShips[key] = Object.assign(rawShips[key] || {}, {
-          mmsi: key, lat, lng,
-          sog: pos.Sog,
-          cog: pos.Cog,
-          navigation_status: pos.NavigationalStatus,
-          name: msg.MetaData?.ShipName?.trim() || rawShips[key]?.name,
-          flag: msg.MetaData?.flag || rawShips[key]?.flag,
-          ship_type: rawShips[key]?.ship_type,
-          destination: rawShips[key]?.destination
-        });
-        renderShip(key);
-      }
-    } catch(e) {
-      console.error('[AIS] Errore parsing messaggio:', e, evt.data?.substring(0, 200));
-    }
-  };
-
-  aisWs.onerror = (err) => {
-    clearTimeout(connTimeout);
-    console.error('[AIS] WebSocket error:', err);
-    _aisStatus('✗ errore WS');
-  };
-
+  aisWs.onmessage = (evt) => _onAISData(evt.data);
+  aisWs.onerror = () => { clearTimeout(connTimeout); _aisStatus('✗ errore WS'); };
   aisWs.onclose = (evt) => {
     clearTimeout(connTimeout);
-    console.warn(`[AIS] Chiuso — code:${evt.code} reason:"${evt.reason}"`);
     _aisStatus(`○ chiuso (${evt.code})`);
-    // Riconnessione esponenziale solo se il checkbox è ancora attivo
     const aisCb = document.getElementById('ly-ais');
     if (aisCb?.checked && evt.code !== 1000) {
       _aisRetries++;
-      const delay = Math.min(2000 * Math.pow(2, _aisRetries - 1), 30000);
-      console.log(`[AIS] Riconnessione in ${delay}ms (tentativo ${_aisRetries})`);
-      setTimeout(startAIS, delay);
+      setTimeout(startAIS, Math.min(2000 * Math.pow(2, _aisRetries - 1), 30000));
     }
   };
 }
@@ -1174,6 +1161,7 @@ function toggleAIS(cb) {
     startAIS();
   } else {
     _aisRetries = 0;
+    if (aisEvtSource) { aisEvtSource.close(); aisEvtSource = null; }
     if (aisWs) { aisWs.close(1000, 'user disabled'); aisWs = null; }
     layers.ships.remove();
     rawShips = {};
