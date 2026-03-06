@@ -249,7 +249,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
         <div class="ic-title">⊞ Layer <button onclick="document.getElementById('infra-ctrl').style.display='none'" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:9px">✕</button></div>
         <div class="ic-grp">🚢 Portualità &amp; Traffico Marittimo</div>
         <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-ports" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#3b82f6"></div><span class="ic-lbl">Porti strategici (14)</span></label>
-        <label class="ic-row" title="Richiede chiave AISstream.io — tutta Italia"><input class="ic-cb" type="checkbox" id="ly-ais" onchange="toggleAIS(this)"><div class="ic-dot" style="background:#93c5fd;border-radius:50%"></div><span class="ic-lbl">Navi AIS live — acque IT</span><span class="ic-badge" id="ais-badge" style="display:none">0</span><span class="ic-badge off" id="ais-nokey">NO KEY</span></label>
+        <label class="ic-row" title="Layer cartografico OpenSeaMap — sempre attivo con AIS"><input class="ic-cb" type="checkbox" id="ly-seamap" onchange="toggleSeaMap(this)"><div class="ic-dot" style="background:#38bdf8;border-radius:2px"></div><span class="ic-lbl">OpenSeaMap (rotte/boe)</span></label>
+        <label class="ic-row" title="Richiede chiave AISstream.io — tutta Italia"><input class="ic-cb" type="checkbox" id="ly-ais" onchange="toggleAIS(this)"><div class="ic-dot" style="background:#93c5fd;border-radius:50%"></div><span class="ic-lbl">Navi AIS live — acque IT</span><span class="ic-badge" id="ais-badge" style="display:none">0</span><span class="ic-badge off" id="ais-nokey" style="display:none">NO KEY</span></label>
         <label class="ic-row" id="row-ais-cargo" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-cargo" checked onchange="filterShips()"><div class="ic-dot" style="background:#60a5fa;border-radius:50%"></div><span class="ic-lbl">Cargo / Container</span></label>
         <label class="ic-row" id="row-ais-tanker" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-tanker" checked onchange="filterShips()"><div class="ic-dot" style="background:#f97316;border-radius:50%"></div><span class="ic-lbl">Tanker / GNL</span></label>
         <label class="ic-row" id="row-ais-pass" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-pass" checked onchange="filterShips()"><div class="ic-dot" style="background:#a78bfa;border-radius:50%"></div><span class="ic-lbl">Passeggeri / Crociere</span></label>
@@ -951,66 +952,138 @@ function isShipVisible(cat) {
   return cb ? cb.checked : true;
 }
 
+let _aisRetries = 0;
+let _aisMsgCount = 0;
+
+function _aisStatus(txt) {
+  const el = document.getElementById('sb-ais-status');
+  if (el) el.textContent = `AIS: ${txt}`;
+}
+
 function startAIS() {
-  if (!CFG.aisKey) {
-    console.warn('AIS key not set');
-    return;
-  }
+  if (!CFG.aisKey) { _aisStatus('✗ no key'); return; }
+  if (aisWs && aisWs.readyState === WebSocket.OPEN) return;
   if (aisWs) { aisWs.close(); aisWs = null; }
+
+  _aisMsgCount = 0;
+  _aisStatus('↻ conn…');
+  console.log('[AIS] Connessione a aisstream.io…');
 
   aisWs = new WebSocket('wss://stream.aisstream.io/v0/stream');
 
+  // timeout connessione
+  const connTimeout = setTimeout(() => {
+    if (aisWs && aisWs.readyState !== WebSocket.OPEN) {
+      console.warn('[AIS] Timeout connessione');
+      _aisStatus('✗ timeout');
+      aisWs.close();
+    }
+  }, 10000);
+
   aisWs.onopen = () => {
+    clearTimeout(connTimeout);
+    _aisRetries = 0;
+    _aisStatus('● abbonamento…');
+    console.log('[AIS] Connesso — invio subscription');
     aisWs.send(JSON.stringify({
       APIKey: CFG.aisKey,
       BoundingBoxes: [[[35, 6], [48, 19]]],
       FilterMessageTypes: ['PositionReport', 'ClassBPositionReport', 'ShipStaticData']
     }));
-    document.getElementById('sb-ais-status') && (document.getElementById('sb-ais-status').textContent = 'AIS: ●');
   };
 
   aisWs.onmessage = (evt) => {
     try {
       const msg = JSON.parse(evt.data);
-      const mmsi = msg.MetaData?.MMSI || msg.mmsi;
+
+      // errori espliciti dall'API
+      if (msg.error || msg.Error) {
+        const err = msg.error || msg.Error;
+        console.error('[AIS] Errore API:', err);
+        _aisStatus(`✗ ${err}`);
+        aisWs.close();
+        return;
+      }
+      // messaggio di stato/conferma (es. {"status":"ok"})
+      if (!msg.MessageType && !msg.MetaData) {
+        console.log('[AIS] Msg di sistema:', msg);
+        return;
+      }
+
+      _aisMsgCount++;
+      const shipCount = Object.keys(rawShips).filter(k => rawShips[k].lat).length;
+      _aisStatus(`● ${_aisMsgCount} msg / ${shipCount} navi`);
+
+      const mmsi = msg.MetaData?.MMSI ?? msg.MetaData?.MMSI_String ?? msg.mmsi;
       if (!mmsi) return;
       const key = String(mmsi);
 
       if (msg.MessageType === 'ShipStaticData') {
         const sd = msg.Message?.ShipStaticData || {};
         rawShips[key] = Object.assign(rawShips[key] || {mmsi: key}, {
-          name: sd.Name || rawShips[key]?.name,
-          ship_type: sd.Type || rawShips[key]?.ship_type,
-          destination: sd.Destination || rawShips[key]?.destination,
+          name: sd.Name?.trim() || rawShips[key]?.name,
+          ship_type: sd.Type ?? rawShips[key]?.ship_type,
+          destination: sd.Destination?.trim() || rawShips[key]?.destination,
           flag: msg.MetaData?.flag || rawShips[key]?.flag
         });
       } else {
         const pos = msg.Message?.PositionReport || msg.Message?.ClassBPositionReport || {};
-        const lat = pos.Latitude ?? msg.MetaData?.latitude;
-        const lng = pos.Longitude ?? msg.MetaData?.longitude;
-        if (!lat || !lng || lat < 35 || lat > 48 || lng < 6 || lng > 19) return;
+        // Posizione: prima da Message, fallback su MetaData
+        const lat = (pos.Latitude != null ? pos.Latitude : null) ?? msg.MetaData?.latitude ?? null;
+        const lng = (pos.Longitude != null ? pos.Longitude : null) ?? msg.MetaData?.longitude ?? null;
+        if (lat == null || lng == null) return;
+        // Filtra dati nulli AIS (0,0 = dati mancanti nel protocollo)
+        if (lat === 0 && lng === 0) return;
+        if (lat < 30 || lat > 50 || lng < 4 || lng > 22) return;
         rawShips[key] = Object.assign(rawShips[key] || {}, {
-          mmsi: key,
-          lat, lng,
+          mmsi: key, lat, lng,
           sog: pos.Sog,
+          cog: pos.Cog,
           navigation_status: pos.NavigationalStatus,
-          name: msg.MetaData?.ShipName || rawShips[key]?.name,
+          name: msg.MetaData?.ShipName?.trim() || rawShips[key]?.name,
           flag: msg.MetaData?.flag || rawShips[key]?.flag,
           ship_type: rawShips[key]?.ship_type,
           destination: rawShips[key]?.destination
         });
         renderShip(key);
       }
-    } catch(e) {}
+    } catch(e) {
+      console.error('[AIS] Errore parsing messaggio:', e, evt.data?.substring(0, 200));
+    }
   };
 
-  aisWs.onerror = () => {
-    setTimeout(() => { if (aisWs?.readyState !== WebSocket.OPEN) startAIS(); }, 5000);
+  aisWs.onerror = (err) => {
+    clearTimeout(connTimeout);
+    console.error('[AIS] WebSocket error:', err);
+    _aisStatus('✗ errore WS');
   };
 
-  aisWs.onclose = () => {
-    document.getElementById('sb-ais-status') && (document.getElementById('sb-ais-status').textContent = 'AIS: ○');
+  aisWs.onclose = (evt) => {
+    clearTimeout(connTimeout);
+    console.warn(`[AIS] Chiuso — code:${evt.code} reason:"${evt.reason}"`);
+    _aisStatus(`○ chiuso (${evt.code})`);
+    // Riconnessione esponenziale solo se il checkbox è ancora attivo
+    const aisCb = document.getElementById('ly-ais');
+    if (aisCb?.checked && evt.code !== 1000) {
+      _aisRetries++;
+      const delay = Math.min(2000 * Math.pow(2, _aisRetries - 1), 30000);
+      console.log(`[AIS] Riconnessione in ${delay}ms (tentativo ${_aisRetries})`);
+      setTimeout(startAIS, delay);
+    }
   };
+}
+
+function toggleSeaMap(cb) {
+  if (cb.checked) {
+    if (!layers.seamap) {
+      layers.seamap = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+        maxZoom: 18, opacity: 0.8, attribution: '© OpenSeaMap'
+      });
+    }
+    layers.seamap.addTo(map);
+  } else {
+    if (layers.seamap) layers.seamap.remove();
+  }
 }
 
 function renderShip(key) {
@@ -1043,11 +1116,14 @@ function toggleAIS(cb) {
     if (nokey) nokey.style.display = CFG.aisKey ? 'none' : '';
     startAIS();
   } else {
-    if (aisWs) { aisWs.close(); aisWs = null; }
+    _aisRetries = 0;
+    if (aisWs) { aisWs.close(1000, 'user disabled'); aisWs = null; }
     layers.ships.remove();
+    rawShips = {};
     subRows.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
     const shipEl = document.getElementById('sb-ships');
     if (shipEl) shipEl.textContent = 'Navi: OFF';
+    _aisStatus('○ off');
   }
 }
 
