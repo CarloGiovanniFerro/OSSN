@@ -987,8 +987,10 @@ function startAIS() {
   if (aisWs) { aisWs.close(); aisWs = null; }
 
   _aisMsgCount = 0;
-  // Se il relay locale è attivo, usa quello (evita problemi diretti con aisstream.io)
-  const aisEndpoint = CFG.aisRelay || 'wss://stream.aisstream.io/v0/stream';
+  // Auto-detect backend locale (node server.js); fallback a relay manuale o aisstream diretto
+  const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const autoRelay = isLocal ? `ws://${window.location.hostname}:3001/ws` : null;
+  const aisEndpoint = CFG.aisRelay || autoRelay || 'wss://stream.aisstream.io/v0/stream';
   _aisStatus('↻ conn…');
   console.log(`[AIS] Connessione a ${aisEndpoint}…`);
 
