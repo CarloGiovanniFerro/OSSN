@@ -53,6 +53,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .view-pane{flex:1;display:none;position:relative;overflow:hidden}
 .view-pane.a{display:flex;flex-direction:column}
 #map{width:100%;height:100%;background:#0d1018}
+#vessel-overlay{display:none;position:absolute;inset:0;z-index:600;border:none;background:#0d1018}
+#vessel-overlay-bar{display:none;position:absolute;top:0;left:0;right:0;z-index:601;height:32px;background:rgba(7,9,15,.96);border-bottom:1px solid rgba(147,197,253,.2);display:none;align-items:center;padding:0 10px;gap:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#93c5fd}
+.hbtn.vessel{border-color:rgba(147,197,253,.4);color:#93c5fd}
+.hbtn.vessel.active{background:#93c5fd;color:#07090f;border-color:#93c5fd}
 #infra-ctrl{position:absolute;top:8px;left:8px;z-index:500;background:var(--panel);border:1px solid var(--border2);padding:8px 10px;width:212px;max-height:calc(100% - 90px);overflow-y:auto}
 .ic-title{font-size:7.5px;letter-spacing:2px;color:var(--accent);margin-bottom:6px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:space-between}
 .ic-grp{font-size:6.5px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin:7px 0 4px;border-top:1px solid var(--border);padding-top:5px}
@@ -222,7 +226,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <header id="hdr">
   <div class="logo"><div class="logo-sq">OSS</div><div><div class="logo-tx">OSSERVATORIO · INFRASTRUTTURE CRITICHE ITALIA</div><div class="logo-sx">Politecnico di Torino — SVP Industries · v8.0 · 2026</div></div></div>
   <div class="hdr-mid"><div class="live-dot" id="ldot"></div><span id="fstat">INIT...</span><span style="margin:0 5px;color:rgba(255,255,255,.07)">|</span><span id="live-counters">—</span><span style="margin:0 5px;color:rgba(255,255,255,.07)">|</span><span id="infra-alert-hdr" style="color:var(--danger);font-weight:600"></span></div>
-  <div class="hdr-r"><div id="clk"></div><button class="hbtn" onclick="openSet()">⚙ IMPOSTAZIONI</button><button class="hbtn prim" onclick="openRep()">⬡ REPORT AI</button></div>
+  <div class="hdr-r"><div id="clk"></div><button class="hbtn vessel" id="btn-vessel-live" onclick="toggleVesselLive()">🚢 VESSEL LIVE</button><button class="hbtn" onclick="openSet()">⚙ IMPOSTAZIONI</button><button class="hbtn prim" onclick="openRep()">⬡ REPORT AI</button></div>
 </header>
 <div id="app">
   <!-- LEFT PANEL -->
@@ -294,6 +298,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       </div>
       <div class="subfilter-bar" id="subfilter-bar"></div>
       <div id="map"></div>
+      <div id="vessel-overlay-wrap" style="display:none;position:absolute;inset:0;z-index:600;flex-direction:column">
+        <div style="height:30px;background:rgba(7,9,15,.97);border-bottom:1px solid rgba(147,197,253,.25);display:flex;align-items:center;padding:0 12px;gap:10px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#93c5fd;flex-shrink:0">
+          <span style="font-weight:700;letter-spacing:1px">🚢 VESSEL LIVE — MarineTraffic</span>
+          <span style="color:rgba(255,255,255,.3)">|</span>
+          <span style="color:rgba(255,255,255,.4)">Mappa interattiva live · navi in tempo reale</span>
+          <button onclick="toggleVesselLive()" style="margin-left:auto;background:transparent;border:1px solid rgba(147,197,253,.4);color:#93c5fd;padding:3px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;cursor:pointer;letter-spacing:1px">✕ CHIUDI</button>
+        </div>
+        <iframe id="vessel-iframe" src="" style="flex:1;border:none;background:#0d1018" allowfullscreen></iframe>
+      </div>
       <div class="map-status-bar">
         <div class="msb-item"><div class="msb-dot" style="background:var(--ok)"></div><span id="sb-flights">Voli: OFF</span></div>
         <div class="msb-item"><div class="msb-dot" style="background:#3b82f6"></div><span id="sb-ships">Navi: OFF</span></div>
@@ -364,6 +377,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <div>
         <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">🔑 AISstream API Key</label>
         <input id="cfg-ais" type="password" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:6px 10px;color:var(--text1);font-size:12px;box-sizing:border-box">
+        <div style="margin-top:6px">
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">🔀 Relay locale (opzionale — lascia vuoto per diretta)</label>
+          <input id="cfg-ais-relay" type="text" placeholder="ws://localhost:8765  ← esegui ais-relay.js" style="width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:5px 10px;color:var(--text1);font-size:11px;box-sizing:border-box;font-family:'JetBrains Mono',monospace">
+        </div>
       </div>
       <div>
         <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">🗺️ HERE Maps API Key</label>
@@ -415,6 +432,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 // ─────────────────────────── CONFIG ────────────────────────────────────────
 const CFG = {
   aisKey: localStorage.getItem('cfg_ais') || '7a197b841b6701faf083fe0480b223ca96722489',
+  aisRelay: localStorage.getItem('cfg_ais_relay') || '',
   hereKey: localStorage.getItem('cfg_here') || '',
   claudeKey: localStorage.getItem('cfg_claude') || '',
   interval: parseInt(localStorage.getItem('cfg_interval') || '30')
@@ -422,10 +440,12 @@ const CFG = {
 
 function saveSettings() {
   CFG.aisKey = document.getElementById('cfg-ais').value;
+  CFG.aisRelay = document.getElementById('cfg-ais-relay').value.trim();
   CFG.hereKey = document.getElementById('cfg-here').value;
   CFG.claudeKey = document.getElementById('cfg-claude').value;
   CFG.interval = parseInt(document.getElementById('cfg-interval').value || '30');
   localStorage.setItem('cfg_ais', CFG.aisKey);
+  localStorage.setItem('cfg_ais_relay', CFG.aisRelay);
   localStorage.setItem('cfg_here', CFG.hereKey);
   localStorage.setItem('cfg_claude', CFG.claudeKey);
   localStorage.setItem('cfg_interval', CFG.interval);
@@ -439,6 +459,7 @@ function saveSettings() {
 
 function openSettings() {
   document.getElementById('cfg-ais').value = CFG.aisKey;
+  document.getElementById('cfg-ais-relay').value = CFG.aisRelay;
   document.getElementById('cfg-here').value = CFG.hereKey;
   document.getElementById('cfg-claude').value = CFG.claudeKey;
   document.getElementById('cfg-interval').value = CFG.interval;
@@ -966,10 +987,12 @@ function startAIS() {
   if (aisWs) { aisWs.close(); aisWs = null; }
 
   _aisMsgCount = 0;
+  // Se il relay locale è attivo, usa quello (evita problemi diretti con aisstream.io)
+  const aisEndpoint = CFG.aisRelay || 'wss://stream.aisstream.io/v0/stream';
   _aisStatus('↻ conn…');
-  console.log('[AIS] Connessione a aisstream.io…');
+  console.log(`[AIS] Connessione a ${aisEndpoint}…`);
 
-  aisWs = new WebSocket('wss://stream.aisstream.io/v0/stream');
+  aisWs = new WebSocket(aisEndpoint);
 
   // timeout connessione
   const connTimeout = setTimeout(() => {
@@ -984,12 +1007,21 @@ function startAIS() {
     clearTimeout(connTimeout);
     _aisRetries = 0;
     _aisStatus('● abbonamento…');
-    console.log('[AIS] Connesso — invio subscription');
-    aisWs.send(JSON.stringify({
-      APIKey: CFG.aisKey,
-      BoundingBoxes: [[[35, 6], [48, 19]]],
-      FilterMessageTypes: ['PositionReport', 'ClassBPositionReport', 'ShipStaticData']
-    }));
+    console.log('[AIS] Connesso — invio subscription (100ms delay)');
+    // Piccolo delay: alcuni browser chiamano onopen prima che il socket sia
+    // completamente pronto per scrivere, causando chiusura immediata del server
+    setTimeout(() => {
+      if (aisWs && aisWs.readyState === WebSocket.OPEN) {
+        aisWs.send(JSON.stringify({
+          APIKey: CFG.aisKey,
+          BoundingBoxes: [[[35, 6], [48, 19]]],
+          FilterMessageTypes: ['PositionReport', 'ClassBPositionReport', 'ShipStaticData']
+        }));
+        console.log('[AIS] Subscription inviata');
+      } else {
+        console.warn('[AIS] Socket chiuso prima dell\'invio subscription — stato:', aisWs?.readyState);
+      }
+    }, 100);
   };
 
   aisWs.onmessage = (evt) => {
@@ -1071,6 +1103,29 @@ function startAIS() {
       setTimeout(startAIS, delay);
     }
   };
+}
+
+// ─── VESSEL LIVE OVERLAY (MarineTraffic iframe) ───────────────────────────────
+let _vesselLiveOpen = false;
+function toggleVesselLive() {
+  _vesselLiveOpen = !_vesselLiveOpen;
+  const wrap = document.getElementById('vessel-overlay-wrap');
+  const btn  = document.getElementById('btn-vessel-live');
+  const iframe = document.getElementById('vessel-iframe');
+  if (_vesselLiveOpen) {
+    // Centra la mappa MarineTraffic sul centro corrente della mappa Leaflet
+    const c = map ? map.getCenter() : {lat: 41, lng: 14};
+    const z = map ? Math.max(5, map.getZoom()) : 7;
+    iframe.src = `https://www.marinetraffic.com/en/ais/home/centerx:${c.lng.toFixed(2)}/centery:${c.lat.toFixed(2)}/zoom:${z}`;
+    wrap.style.display = 'flex';
+    btn.classList.add('active');
+    btn.textContent = '🚢 CHIUDI LIVE';
+  } else {
+    wrap.style.display = 'none';
+    btn.classList.remove('active');
+    btn.textContent = '🚢 VESSEL LIVE';
+    iframe.src = ''; // libera memoria
+  }
 }
 
 function toggleSeaMap(cb) {
