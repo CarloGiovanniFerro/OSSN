@@ -296,6 +296,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <div class="map-status-bar">
         <div class="msb-item"><div class="msb-dot" style="background:var(--ok)"></div><span id="sb-flights">Voli: OFF</span></div>
         <div class="msb-item"><div class="msb-dot" style="background:#3b82f6"></div><span id="sb-ships">Navi: OFF</span></div>
+        <div class="msb-item"><div class="msb-dot" style="background:#93c5fd"></div><span id="sb-ais-status">AIS: ○</span></div>
         <div class="msb-item"><div class="msb-dot" style="background:var(--warning)"></div><span id="sb-traffic">Traffico: —</span></div>
         <div class="msb-item"><div class="msb-dot" style="background:var(--purple)"></div><span id="sb-tunnels">Trafori: —</span></div>
         <div class="msb-item" style="margin-left:auto"><span id="sb-last-update" style="color:var(--text3)">↻ —</span></div>
@@ -412,7 +413,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <script>
 // ─────────────────────────── CONFIG ────────────────────────────────────────
 const CFG = {
-  aisKey: localStorage.getItem('cfg_ais') || '',
+  aisKey: localStorage.getItem('cfg_ais') || '7a197b841b6701faf083fe0480b223ca96722489',
   hereKey: localStorage.getItem('cfg_here') || '',
   claudeKey: localStorage.getItem('cfg_claude') || '',
   interval: parseInt(localStorage.getItem('cfg_interval') || '30')
@@ -429,6 +430,10 @@ function saveSettings() {
   localStorage.setItem('cfg_interval', CFG.interval);
   document.getElementById('modal-settings').style.display = 'none';
   if (flightTimer) { clearInterval(flightTimer); fetchFlights(); flightTimer = setInterval(fetchFlights, CFG.interval * 1000); }
+  const aisCb = document.getElementById('ly-ais');
+  if (aisCb?.checked) { if (aisWs) { aisWs.close(); aisWs = null; } startAIS(); }
+  const nokey = document.getElementById('ais-nokey');
+  if (nokey) nokey.style.display = CFG.aisKey ? 'none' : '';
 }
 
 function openSettings() {
@@ -659,6 +664,12 @@ function initMap() {
   renderInfrastructure();
   loadAllFeeds();
   startTunnelStatusPolling();
+
+  // Hide ais-nokey badge if key is already configured
+  if (CFG.aisKey) {
+    const nokey = document.getElementById('ais-nokey');
+    if (nokey) nokey.style.display = 'none';
+  }
 
   // Update status bar
   updateStatusBar();
@@ -1024,12 +1035,19 @@ function filterShips() {
 }
 
 function toggleAIS(cb) {
+  const subRows = ['row-ais-cargo','row-ais-tanker','row-ais-pass','row-ais-mil'];
   if (cb.checked) {
     layers.ships.addTo(map);
+    subRows.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+    const nokey = document.getElementById('ais-nokey');
+    if (nokey) nokey.style.display = CFG.aisKey ? 'none' : '';
     startAIS();
   } else {
     if (aisWs) { aisWs.close(); aisWs = null; }
     layers.ships.remove();
+    subRows.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    const shipEl = document.getElementById('sb-ships');
+    if (shipEl) shipEl.textContent = 'Navi: OFF';
   }
 }
 
@@ -1119,14 +1137,19 @@ function filterFlights() {
 }
 
 function toggleFlights(cb) {
+  const subRows = ['row-flights-mil','row-flights-gov','row-flights-civ'];
   if (cb.checked) {
     layers.flights.addTo(map);
+    subRows.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
     fetchFlights();
     if (flightTimer) clearInterval(flightTimer);
     flightTimer = setInterval(fetchFlights, CFG.interval * 1000);
   } else {
     if (flightTimer) { clearInterval(flightTimer); flightTimer = null; }
     layers.flights.remove();
+    subRows.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    const flightEl = document.getElementById('sb-flights');
+    if (flightEl) flightEl.textContent = 'Voli: OFF';
   }
 }
 
