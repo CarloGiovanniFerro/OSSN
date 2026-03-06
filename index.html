@@ -249,14 +249,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
         <div class="ic-title">⊞ Layer <button onclick="document.getElementById('infra-ctrl').style.display='none'" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:9px">✕</button></div>
         <div class="ic-grp">🚢 Portualità &amp; Traffico Marittimo</div>
         <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-ports" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#3b82f6"></div><span class="ic-lbl">Porti strategici (14)</span></label>
-        <label class="ic-row" title="Richiede chiave AISstream.io — tutta Italia"><input class="ic-cb" type="checkbox" id="ly-ais" onchange="toggleAIS()"><div class="ic-dot" style="background:#93c5fd;border-radius:50%"></div><span class="ic-lbl">Navi AIS live — acque IT</span><span class="ic-badge" id="ais-badge" style="display:none">0</span><span class="ic-badge off" id="ais-nokey">NO KEY</span></label>
+        <label class="ic-row" title="Richiede chiave AISstream.io — tutta Italia"><input class="ic-cb" type="checkbox" id="ly-ais" onchange="toggleAIS(this)"><div class="ic-dot" style="background:#93c5fd;border-radius:50%"></div><span class="ic-lbl">Navi AIS live — acque IT</span><span class="ic-badge" id="ais-badge" style="display:none">0</span><span class="ic-badge off" id="ais-nokey">NO KEY</span></label>
         <label class="ic-row" id="row-ais-cargo" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-cargo" checked onchange="filterShips()"><div class="ic-dot" style="background:#60a5fa;border-radius:50%"></div><span class="ic-lbl">Cargo / Container</span></label>
         <label class="ic-row" id="row-ais-tanker" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-tanker" checked onchange="filterShips()"><div class="ic-dot" style="background:#f97316;border-radius:50%"></div><span class="ic-lbl">Tanker / GNL</span></label>
         <label class="ic-row" id="row-ais-pass" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-pass" checked onchange="filterShips()"><div class="ic-dot" style="background:#a78bfa;border-radius:50%"></div><span class="ic-lbl">Passeggeri / Crociere</span></label>
         <label class="ic-row" id="row-ais-mil" style="display:none"><input class="ic-cb" type="checkbox" id="ly-ais-mil" checked onchange="filterShips()"><div class="ic-dot" style="background:#f87171;border-radius:50%"></div><span class="ic-lbl">Militari / G.Costiera</span></label>
         <div class="ic-grp">✈ Aviazione</div>
         <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-airports" checked onchange="renderAllLayers()"><div class="ic-dot" style="background:#8b5cf6"></div><span class="ic-lbl">Aeroporti (20)</span></label>
-        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-flights" onchange="toggleFlights()"><div class="ic-dot" style="background:#c084fc;border-radius:50%"></div><span class="ic-lbl">Voli live (OpenSky)</span><span class="ic-badge" id="flights-badge" style="display:none">0</span></label>
+        <label class="ic-row"><input class="ic-cb" type="checkbox" id="ly-flights" onchange="toggleFlights(this)"><div class="ic-dot" style="background:#c084fc;border-radius:50%"></div><span class="ic-lbl">Voli live (OpenSky)</span><span class="ic-badge" id="flights-badge" style="display:none">0</span></label>
         <label class="ic-row" id="row-flights-mil" style="display:none"><input class="ic-cb" type="checkbox" id="ly-flights-mil" checked onchange="filterFlights()"><div class="ic-dot" style="background:#f87171;border-radius:50%"></div><span class="ic-lbl">Militari (AMI/Marina/GdF)</span></label>
         <label class="ic-row" id="row-flights-gov" style="display:none"><input class="ic-cb" type="checkbox" id="ly-flights-gov" checked onchange="filterFlights()"><div class="ic-dot" style="background:#fb923c;border-radius:50%"></div><span class="ic-lbl">Gov (Pol/Car/PCI)</span></label>
         <label class="ic-row" id="row-flights-civ" style="display:none"><input class="ic-cb" type="checkbox" id="ly-flights-civ" checked onchange="filterFlights()"><div class="ic-dot" style="background:#a78bfa;border-radius:50%"></div><span class="ic-lbl">Commerciali</span></label>
@@ -651,8 +651,8 @@ function initMap() {
   layers.gas = L.layerGroup();
   layers.petrochem = L.layerGroup();
   layers.geo = L.layerGroup();
-  layers.ships = L.layerGroup().addTo(map);
-  layers.flights = L.layerGroup().addTo(map);
+  layers.ships = L.layerGroup();
+  layers.flights = L.layerGroup();
   layers.rail = L.layerGroup();
   layers.highway = L.layerGroup();
 
@@ -932,7 +932,13 @@ function buildShipPopup(s) {
   </div>`;
 }
 
-let activeShipFilter = 'all';
+function isShipVisible(cat) {
+  const map = {cargo: 'ly-ais-cargo', tanker: 'ly-ais-tanker', passenger: 'ly-ais-pass', military: 'ly-ais-mil'};
+  const id = map[cat];
+  if (!id) return true;
+  const cb = document.getElementById(id);
+  return cb ? cb.checked : true;
+}
 
 function startAIS() {
   if (!CFG.aisKey) {
@@ -1000,7 +1006,7 @@ function renderShip(key) {
   const s = rawShips[key];
   if (!s || !s.lat || !s.lng) return;
   const cat = getShipCategory(s.ship_type, s.name);
-  if (activeShipFilter !== 'all' && cat !== activeShipFilter) return;
+  if (!isShipVisible(cat)) return;
 
   if (s._marker) {
     s._marker.setLatLng([s.lat, s.lng]);
@@ -1011,14 +1017,10 @@ function renderShip(key) {
   }
 }
 
-function filterShips(type) {
-  activeShipFilter = type;
+function filterShips() {
   layers.ships.clearLayers();
   Object.keys(rawShips).forEach(k => { delete rawShips[k]._marker; });
   Object.keys(rawShips).forEach(k => renderShip(k));
-  document.querySelectorAll('.ais-sub-btn').forEach(b => b.classList.remove('a'));
-  const btn = document.querySelector(`.ais-sub-btn[data-type="${type}"]`);
-  if (btn) btn.classList.add('a');
 }
 
 function toggleAIS(cb) {
@@ -1082,7 +1084,13 @@ function buildFlightPopup(f) {
   </div>`;
 }
 
-let activeFlightFilter = 'all';
+function isFlightVisible(cls) {
+  const map = {mil: 'ly-flights-mil', gov: 'ly-flights-gov', civ: 'ly-flights-civ'};
+  const id = map[cls];
+  if (!id) return true;
+  const cb = document.getElementById(id);
+  return cb ? cb.checked : true;
+}
 
 async function fetchFlights() {
   try {
@@ -1099,19 +1107,15 @@ function renderFlights() {
   layers.flights.clearLayers();
   rawFlights.forEach(f => {
     const cls = classifyFlight(f[0], f[1]);
-    if (activeFlightFilter !== 'all' && cls !== activeFlightFilter) return;
+    if (!isFlightVisible(cls)) return;
     const m = L.marker([f[6], f[5]], {icon: buildFlightIcon(cls)});
     m.bindPopup(buildFlightPopup(f));
     layers.flights.addLayer(m);
   });
 }
 
-function filterFlights(type) {
-  activeFlightFilter = type;
+function filterFlights() {
   renderFlights();
-  document.querySelectorAll('.flt-sub-btn').forEach(b => b.classList.remove('a'));
-  const btn = document.querySelector(`.flt-sub-btn[data-type="${type}"]`);
-  if (btn) btn.classList.add('a');
 }
 
 function toggleFlights(cb) {
